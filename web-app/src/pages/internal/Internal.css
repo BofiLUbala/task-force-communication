@@ -1,0 +1,89 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, var(--navy-light) 0%, var(--navy) 65%);
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  padding: 40px;
+  width: 380px;
+  color: var(--white);
+}
+
+.login-emblem {
+  position: relative;
+  width: 112px; height: 112px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; margin: 0 auto 20px;
+}
+.login-emblem img {
+  position: absolute; width: 328%; height: 152%; max-width: none;
+  left: -8.5%; top: -32.5%;
+}
+
+.login-card h1 { text-align: center; font-size: 1.25rem; margin: 0 0 4px; }
+.login-card .subtitle { text-align: center; color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 28px; }
+
+.login-card label { font-size: 0.82rem; color: rgba(255,255,255,0.75); display: block; margin-bottom: 6px; }
+.login-card input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: var(--white);
+  font-family: inherit;
+}
+.login-card input::placeholder { color: rgba(255,255,255,0.4); }
+
+.login-notice { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 20px; text-align: center; line-height: 1.5; }
+.login-error { background: rgba(197,48,48,0.2); border: 1px solid var(--status-rejected); color: #ffb3b3; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; }
+
+/* Dashboards */
+.dash-shell { display: flex; min-height: 100vh; background: var(--gray-bg); }
+
+.dash-sidebar {
+  width: 240px;
+  background: var(--navy);
+  color: var(--white);
+  padding: 24px 0;
+  flex-shrink: 0;
+}
+.dash-sidebar .brand-text { padding: 0 24px 24px; font-weight: 700; color: var(--gold); font-size: 0.95rem; }
+.dash-sidebar nav a, .dash-sidebar nav button {
+  display: block; width: 100%; text-align: left;
+  padding: 12px 24px; color: rgba(255,255,255,0.75); font-size: 0.9rem;
+  background: none; border: none;
+}
+.dash-sidebar nav a.active, .dash-sidebar nav a:hover, .dash-sidebar nav button:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+
+.dash-main { flex: 1; padding: 32px; overflow-x: auto; }
+.dash-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.dash-topbar h1 { font-size: 1.4rem; color: var(--navy); margin: 0; }
+
+.stats-bar { display: flex; gap: 16px; margin-bottom: 28px; }
+.stat-box { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 24px; flex: 1; }
+.stat-box .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--navy); }
+.stat-box .stat-label { font-size: 0.82rem; color: var(--text-muted); }
+
+.data-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.data-table th { text-align: left; background: var(--gray-bg); padding: 12px 16px; font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); }
+.data-table td { padding: 14px 16px; border-top: 1px solid #eee; font-size: 0.88rem; }
+.data-table .actions { display: flex; gap: 8px; }
+.action-btn { padding: 6px 14px; border-radius: 6px; border: none; font-size: 0.8rem; font-weight: 600; }
+.action-approve { background: #e6f4ea; color: var(--status-validated); }
+.action-reject { background: #fbe7e7; color: var(--status-rejected); }
+
+.report-form { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; max-width: 560px; margin-bottom: 32px; }
+.report-form label { display: block; font-size: 0.85rem; color: var(--text-muted); margin: 12px 0 6px; }
+.report-form input, .report-form textarea, .report-form select {
+  width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #d6d6de; font-family: inherit;
+}
+.report-form textarea { min-height: 90px; resize: vertical; }

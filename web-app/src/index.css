@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap');
+
+:root {
+  /* Stitch design tokens — stitch_task_force_portal_showcase/DESIGN.md */
+  --primary: #002f6a;
+  --primary-container: #004595;
+  --on-primary: #ffffff;
+  --on-primary-container: #93b6ff;
+  --secondary: #705d00;
+  --secondary-container: #fed721;
+  --secondary-fixed: #ffe16d;
+  --secondary-fixed-dim: #e9c400;
+  --on-secondary-container: #705e00;
+  --tertiary: #6a000c;
+  --error: #ba1a1a;
+
+  --background: #f8f9ff;
+  --surface: #f8f9ff;
+  --surface-dim: #ccdbf3;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eff4ff;
+  --surface-container: #e6eeff;
+  --surface-container-high: #dce9ff;
+  --surface-container-highest: #d5e3fc;
+
+  --on-surface: #0d1c2e;
+  --on-surface-variant: #434751;
+  --on-background: #0d1c2e;
+  --inverse-surface: #233144;
+  --inverse-on-surface: #eaf1ff;
+  --outline: #737783;
+  --outline-variant: #c3c6d3;
+
+  /* legacy aliases used by internal dashboards */
+  --navy: var(--primary);
+  --navy-light: var(--primary-container);
+  --gold: var(--secondary-fixed-dim);
+  --gold-light: var(--secondary-fixed);
+  --white: #ffffff;
+  --gray-bg: var(--surface-container-low);
+  --text-dark: var(--on-surface);
+  --text-muted: var(--on-surface-variant);
+  --status-pending: #d69e2e;
+  --status-validated: #2f855a;
+  --status-rejected: var(--error);
+  --radius: 0.5rem;
+  --shadow: 0 2px 10px rgba(0, 47, 106, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--on-background);
+  background: var(--background);
+}
+
+h1, h2, h3, h4, h5, .font-headline {
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 20px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: var(--radius);
+  border: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: opacity 0.15s ease;
+}
+.btn:hover { opacity: 0.88; }
+.btn-gold { background: var(--gold); color: var(--primary); }
+.btn-navy { background: var(--primary); color: var(--white); }
+.btn-outline { background: transparent; border: 1.5px solid var(--white); color: var(--white); }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--white);
+}
+.badge-PENDING { background: var(--status-pending); }
+.badge-VALIDATED { background: var(--status-validated); }
+.badge-REJECTED { background: var(--status-rejected); }
