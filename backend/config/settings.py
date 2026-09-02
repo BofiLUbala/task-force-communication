@@ -124,16 +124,22 @@ CORS_ALLOWED_ORIGINS = config(
 )
 
 # Email
+EMAIL_HOST = config('EMAIL_HOST', default=config('SMTP_HOST', default='smtp.gmail.com'))
+EMAIL_PORT = config('EMAIL_PORT', default=config('SMTP_PORT', default=587, cast=int), cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=config('SMTP_USE_TLS', default=True, cast=bool), cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default=config('SMTP_USER', default=''))
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default=config('SMTP_PASSWORD', default=''))
 EMAIL_BACKEND = config(
     'EMAIL_BACKEND',
-    default='django.core.mail.backends.console.EmailBackend',
+    default=(
+        'django.core.mail.backends.smtp.EmailBackend'
+        if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD
+        else 'django.core.mail.backends.console.EmailBackend'
+    ),
 )
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('SMTP_FROM', default=EMAIL_HOST_USER))
+EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=15, cast=int)
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
 # Expo push notifications
 EXPO_PUSH_URL = config('EXPO_PUSH_URL', default='https://exp.host/--/api/v2/push/send')

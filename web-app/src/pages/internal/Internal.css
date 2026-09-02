@@ -46,6 +46,31 @@
 .login-notice { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 20px; text-align: center; line-height: 1.5; }
 .login-error { background: rgba(197,48,48,0.2); border: 1px solid var(--status-rejected); color: #ffb3b3; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; }
 
+.auth-inline-link { display: flex; justify-content: flex-end; margin: -8px 0 18px; }
+.auth-inline-link a, .auth-switch a { color: var(--gold); font-weight: 700; }
+.auth-inline-link a { font-size: 0.8rem; }
+.auth-switch { text-align: center; color: rgba(255,255,255,0.7); font-size: 0.82rem; margin: 18px 0 0; }
+.auth-page { padding: 32px 20px; }
+.auth-card { width: min(620px, 100%); }
+.auth-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.auth-submit { width: 100%; margin-top: 6px; }
+.auth-success, .auth-status {
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(36, 171, 94, 0.18);
+  border: 1px solid rgba(89, 224, 147, 0.55);
+  color: #c8f8dc;
+  line-height: 1.5;
+  text-align: center;
+}
+.auth-status { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: var(--white); }
+.auth-success a, .login-error a { display: block; color: var(--gold); font-weight: 700; margin-top: 12px; }
+
+@media (max-width: 560px) {
+  .auth-field-grid { grid-template-columns: 1fr; gap: 0; }
+  .login-card { padding: 28px 22px; }
+}
+
 /* Dashboards */
 .dash-shell { display: flex; min-height: 100vh; background: var(--gray-bg); }
 

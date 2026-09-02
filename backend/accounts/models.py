@@ -20,3 +20,23 @@ class User(AbstractUser):
     @property
     def is_hierarchy(self):
         return self.role == self.Role.HIERARCHY
+
+
+class OneTimeToken(models.Model):
+    class Purpose(models.TextChoices):
+        EMAIL_VERIFICATION = 'EMAIL_VERIFICATION', "Confirmation d’adresse e-mail"
+        PASSWORD_RESET = 'PASSWORD_RESET', 'Réinitialisation du mot de passe'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='one_time_tokens')
+    purpose = models.CharField(max_length=30, choices=Purpose.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=('purpose', 'token_hash'), name='accounts_on_purpose_02cdec_idx')]
+
+    @property
+    def is_used(self):
+        return self.used_at is not None

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.password_validation import validate_password
 
 from .models import User
 
@@ -32,3 +33,43 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ExpoPushTokenSerializer(serializers.Serializer):
     expo_push_token = serializers.CharField(max_length=255)
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'matricule', 'phone_number', 'unit', 'password')
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError('Un compte utilise déjà cette adresse e-mail.')
+        return email
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        email = validated_data['email']
+        user = User(
+            username=email,
+            role=User.Role.AGENT,
+            is_active=False,
+            is_active_agent=False,
+            **validated_data,
+        )
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class EmailTokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(EmailTokenSerializer):
+    password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])

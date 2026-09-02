@@ -7,6 +7,7 @@ import Actualites from './pages/public/Actualites';
 import Galerie from './pages/public/Galerie';
 import Contact from './pages/public/Contact';
 import Login from './pages/internal/Login';
+import { ForgotPassword, Register, ResetPassword, VerifyEmail } from './pages/internal/AuthPages';
 import AgentDashboard from './pages/internal/AgentDashboard';
 import HierarchyDashboard from './pages/internal/HierarchyDashboard';
 
@@ -22,6 +23,10 @@ export default function App() {
       </Route>
 
       <Route path="/connexion" element={<Login />} />
+      <Route path="/inscription" element={<Register />} />
+      <Route path="/confirmation-email" element={<VerifyEmail />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+      <Route path="/nouveau-mot-de-passe" element={<ResetPassword />} />
 
       <Route element={<ProtectedRoute role="AGENT" />}>
         <Route path="/espace/rapports" element={<AgentDashboard />} />

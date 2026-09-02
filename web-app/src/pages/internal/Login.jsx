@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Internal.css';
 
@@ -43,10 +43,16 @@ export default function Login() {
           <label htmlFor="password">Mot de passe</label>
           <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
 
+          <div className="auth-inline-link">
+            <Link to="/mot-de-passe-oublie">Mot de passe oublié&nbsp;?</Link>
+          </div>
+
           <button type="submit" className="btn btn-gold" style={{ width: '100%' }} disabled={loading}>
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
+
+        <p className="auth-switch">Pas encore de compte&nbsp;? <Link to="/inscription">Créer un compte</Link></p>
 
         <p className="login-notice">
           Accès strictement réservé aux agents et personnel autorisé de la Task Force Présidentielle.
