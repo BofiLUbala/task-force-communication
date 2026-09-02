@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     setUser(null);
+    window.location.assign('/');
   }
 
   return (

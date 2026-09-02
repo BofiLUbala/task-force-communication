@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import client from '../../api/client';
 import './Listing.css';
+import usePreferences from '../../hooks/usePreferences';
 
 const categories = [
   { value: '', label: 'Toutes' },
@@ -10,6 +12,7 @@ const categories = [
 ];
 
 export default function Actualites() {
+  const { tr, language } = usePreferences();
   const [posts, setPosts] = useState([]);
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
@@ -26,20 +29,24 @@ export default function Actualites() {
     <>
       <div className="page-header">
         <div className="container">
-          <h1>Actualités</h1>
-          <p>Communiqués officiels et annonces de la Task Force Présidentielle.</p>
+          <Link to="/" className="page-back-link">
+            <span className="material-symbols-outlined">arrow_back</span>
+            {tr('Retour à l’accueil', 'Back to home')}
+          </Link>
+          <h1>{tr('Actualités', 'News')}</h1>
+          <p>{tr('Communiqués officiels et annonces de la Task Force Présidentielle.', 'Official releases and Presidential Task Force announcements.')}</p>
         </div>
       </div>
       <div className="listing-layout">
         <div className="news-list">
-          {filtered.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Aucune publication trouvée.</p>}
+          {filtered.length === 0 && <p style={{ color: 'var(--text-muted)' }}>{tr('Aucune publication trouvée.', 'No publications found.')}</p>}
           {filtered.map((post) => (
             <article className="news-item" key={post.id}>
               <div className="news-thumb" style={post.cover_image ? { backgroundImage: `url(${post.cover_image})`, backgroundSize: 'cover' } : undefined} />
               <div className="news-body">
                 <div className="news-date">
                   <span className="material-symbols-outlined">calendar_today</span>
-                  {new Date(post.published_at || post.created_at).toLocaleDateString('fr-FR')}
+                  {new Date(post.published_at || post.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
                 </div>
                 <h3 className="news-title">{post.title}</h3>
                 <p className="news-excerpt">{post.excerpt}</p>
@@ -50,12 +57,12 @@ export default function Actualites() {
         <aside className="sidebar">
           <input
             className="search-input"
-            placeholder="Rechercher..."
+            placeholder={tr('Rechercher...', 'Search...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <div className="sidebar-box">
-            <h4>Catégories</h4>
+            <h4>{tr('Catégories', 'Categories')}</h4>
             <ul>
               {categories.map((c) => (
                 <li
@@ -63,7 +70,7 @@ export default function Actualites() {
                   style={{ cursor: 'pointer', fontWeight: category === c.value ? 700 : 400 }}
                   onClick={() => setCategory(c.value)}
                 >
-                  {c.label}
+                  {tr(c.label, ({ Toutes: 'All', Communiqués: 'Releases', Actualités: 'News', Activités: 'Activities' })[c.label] || c.label)}
                 </li>
               ))}
             </ul>

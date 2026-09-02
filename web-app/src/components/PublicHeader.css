@@ -76,6 +76,7 @@
 }
 
 .header-actions { display: flex; align-items: center; gap: 16px; }
+.header-cta { padding: 10px 20px; font-size: 0.85rem; }
 
 .search-box {
   position: relative;
@@ -104,6 +105,12 @@
   box-shadow: 0 0 0 3px rgba(233, 196, 0, 0.25);
 }
 
+@media (max-width: 1280px) {
+  .brand-emblem { width: 250px; }
+  .search-box { display: none; }
+  .public-header nav { gap: 18px; }
+}
+
 @media (max-width: 960px) {
   .public-header nav,
   .search-box { display: none; }
@@ -111,7 +118,14 @@
 
 @media (max-width: 640px) {
   .header-inner { padding: 0 16px; gap: 12px; }
-  .brand-emblem { width: 190px; height: 46px; }
+  .brand-emblem { width: 120px; height: 42px; }
   .brand-text { font-size: 1.1rem; }
-  .header-actions .btn { padding: 8px 14px; font-size: 0.78rem; white-space: nowrap; }
+  .header-actions { gap: 6px; }
+  .header-cta { width: 42px; height: 40px; padding: 0; font-size: 0; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; }
+  .header-cta::after { content: 'person'; font-family: 'Material Symbols Outlined'; font-size: 21px; }
+}
+
+@media (max-width: 390px) {
+  .header-inner { padding: 0 10px; gap: 6px; }
+  .brand-emblem { width: 98px; height: 38px; }
 }

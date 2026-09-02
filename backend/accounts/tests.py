@@ -17,15 +17,16 @@ class AccountActivationTests(APITestCase):
             'first_name': 'Jean',
             'last_name': 'Agent',
             'email': 'jean@example.com',
-            'matricule': 'TF-001',
             'phone_number': '+243810000000',
-            'unit': 'Kinshasa',
             'password': 'A-Strong-pass-482!',
         })
         self.assertEqual(response.status_code, 201)
         user = User.objects.get(email='jean@example.com')
         self.assertFalse(user.is_active)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox[0].alternatives), 1)
+        self.assertIn('Activer mon compte', mail.outbox[0].alternatives[0].content)
+        self.assertTrue(any(attachment.get('Content-ID') == '<taskforce-logo>' for attachment in mail.outbox[0].attachments))
 
         link = next(line for line in mail.outbox[0].body.splitlines() if 'confirmation-email?token=' in line)
         token = parse_qs(urlparse(link).query)['token'][0]
@@ -58,6 +59,7 @@ class PasswordResetTests(APITestCase):
         user = User.objects.create_user(username='agent@example.com', email='agent@example.com', password='Old-pass-482!')
         request = self.client.post('/api/auth/password-reset/', {'email': user.email})
         self.assertEqual(request.status_code, 200)
+        self.assertIn('Choisir un nouveau mot de passe', mail.outbox[0].alternatives[0].content)
         link = next(line for line in mail.outbox[0].body.splitlines() if 'nouveau-mot-de-passe?token=' in line)
         token = parse_qs(urlparse(link).query)['token'][0]
 

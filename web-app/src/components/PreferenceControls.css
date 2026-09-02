@@ -1,0 +1,16 @@
+.preference-controls { display: flex; align-items: center; gap: 8px; }
+.theme-toggle, .language-control {
+  height: 40px; display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--outline-variant); border-radius: 9px;
+  background: var(--surface-container-lowest); color: var(--on-surface); padding: 0 10px;
+}
+.theme-toggle { font-weight: 700; font-size: .78rem; }
+.language-control select { border: 0; outline: 0; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }
+.language-control option { color: #0d1c2e; }
+.preference-controls.compact .theme-toggle { width: 40px; padding: 0; justify-content: center; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 560px) {
+  .preference-controls:not(.compact) .theme-toggle span:last-child { display: none; }
+  .preference-controls:not(.compact) .theme-toggle { width: 40px; padding: 0; justify-content: center; }
+}

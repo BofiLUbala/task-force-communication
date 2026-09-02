@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from .models import PublicMedia, PublicPost, Report, ReportMedia
+from .models import (
+    EditorImage,
+    PublicMedia,
+    PublicPost,
+    Report,
+    ReportMedia,
+    SocialAccount,
+    SocialMediaLink,
+    SocialPostAttempt,
+)
 
 
 class ReportMediaSerializer(serializers.ModelSerializer):
@@ -54,4 +63,43 @@ class PublicPostSerializer(serializers.ModelSerializer):
             'source_report', 'published_by', 'published_by_name', 'is_published',
             'published_at', 'created_at', 'gallery',
         )
-        read_only_fields = ('id', 'published_by', 'published_by_name', 'published_at', 'created_at', 'gallery')
+        read_only_fields = ('id', 'slug', 'published_by', 'published_by_name', 'published_at', 'created_at', 'gallery')
+
+
+class EditorImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EditorImage
+        fields = ('id', 'file', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+
+class SocialMediaLinkSerializer(serializers.ModelSerializer):
+    added_by_name = serializers.CharField(source='added_by.get_full_name', read_only=True)
+
+    class Meta:
+        model = SocialMediaLink
+        fields = ('id', 'name', 'url', 'is_active', 'order', 'added_by', 'added_by_name', 'created_at')
+        read_only_fields = ('id', 'added_by', 'added_by_name', 'created_at')
+
+
+class SocialAccountSerializer(serializers.ModelSerializer):
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    connected_by_name = serializers.CharField(source='connected_by.get_full_name', read_only=True)
+
+    class Meta:
+        model = SocialAccount
+        fields = (
+            'id', 'platform', 'platform_display', 'account_name', 'is_active',
+            'connected_by', 'connected_by_name', 'connected_at',
+        )
+        read_only_fields = fields
+
+
+class SocialPostAttemptSerializer(serializers.ModelSerializer):
+    platform = serializers.CharField(source='account.platform', read_only=True)
+    platform_display = serializers.CharField(source='account.get_platform_display', read_only=True)
+
+    class Meta:
+        model = SocialPostAttempt
+        fields = ('id', 'platform', 'platform_display', 'status', 'detail', 'external_url', 'created_at')
+        read_only_fields = fields

@@ -122,6 +122,10 @@ CORS_ALLOWED_ORIGINS = config(
     default='http://localhost:5173,http://127.0.0.1:5173',
     cast=Csv(),
 )
+# Needed so the browser keeps the Django session cookie set when the SPA
+# calls the social-accounts OAuth "start" endpoint cross-origin — that
+# session is what verifies the OAuth "state" on the provider's callback.
+CORS_ALLOW_CREDENTIALS = True
 
 # Email
 EMAIL_HOST = config('EMAIL_HOST', default=config('SMTP_HOST', default='smtp.gmail.com'))
@@ -148,3 +152,17 @@ EXPO_PUSH_URL = config('EXPO_PUSH_URL', default='https://exp.host/--/api/v2/push
 OPENWA_API_URL = config('OPENWA_API_URL', default='http://127.0.0.1:8002')
 OPENWA_API_KEY = config('OPENWA_API_KEY', default='')
 OPENWA_ENABLED = config('OPENWA_ENABLED', default=False, cast=bool)
+
+# Social media auto-publishing — each platform is disabled until its
+# developer app credentials are provided via environment variables.
+SOCIAL_AUTH_REDIRECT_BASE = config('SOCIAL_AUTH_REDIRECT_BASE', default='http://localhost:8000')
+
+LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID', default='')
+LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET', default='')
+LINKEDIN_ORGANIZATION_URN = config('LINKEDIN_ORGANIZATION_URN', default='')
+
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
+
+TIKTOK_CLIENT_KEY = config('TIKTOK_CLIENT_KEY', default='')
+TIKTOK_CLIENT_SECRET = config('TIKTOK_CLIENT_SECRET', default='')

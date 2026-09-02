@@ -1,14 +1,16 @@
 import { NavLink } from 'react-router-dom';
 import './PublicHeader.css';
-
-const links = [
-  { to: '/', label: 'Accueil', end: true },
-  { to: '/actualites', label: 'Actualités' },
-  { to: '/activites', label: 'Rapports Publics' },
-  { to: '/contact', label: 'Contact' },
-];
+import PreferenceControls from './PreferenceControls';
+import usePreferences from '../hooks/usePreferences';
 
 export default function PublicHeader() {
+  const { tr } = usePreferences();
+  const links = [
+    { to: '/', label: tr('Accueil', 'Home'), end: true },
+    { to: '/actualites', label: tr('Actualités', 'News') },
+    { to: '/activites', label: tr('Rapports publics', 'Public reports') },
+    { to: '/contact', label: tr('Contact', 'Contact') },
+  ];
   return (
     <header className="public-header">
       <div className="header-inner">
@@ -29,10 +31,11 @@ export default function PublicHeader() {
         <div className="header-actions">
           <div className="search-box">
             <span className="material-symbols-outlined">search</span>
-            <input type="text" placeholder="Recherche officielle..." />
+            <input type="text" placeholder={tr('Recherche officielle...', 'Official search...')} />
           </div>
-          <NavLink to="/connexion" className="btn btn-navy" style={{ padding: '10px 20px', fontSize: '0.85rem' }}>
-            Espace agents
+          <PreferenceControls compact />
+          <NavLink to="/connexion" className="btn btn-navy header-cta">
+            {tr('Espace agents', 'Agent portal')}
           </NavLink>
         </div>
       </div>

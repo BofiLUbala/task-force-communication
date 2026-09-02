@@ -12,6 +12,20 @@ def public_upload_path(instance, filename):
     return f'public/{instance.post.id}/{filename}'
 
 
+def editor_upload_path(instance, filename):
+    return f'editor/{instance.uploaded_by_id}/{filename}'
+
+
+class EditorImage(models.Model):
+    """An image inserted inline into a rich-text editor (news body, etc.)."""
+
+    file = models.ImageField(upload_to=editor_upload_path)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='editor_images',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class Report(models.Model):
     """A field report submitted by an agent, awaiting hierarchy validation."""
 
@@ -94,6 +108,76 @@ class PublicPost(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class SocialMediaLink(models.Model):
+    """A social network link shown prominently on the public homepage."""
+
+    name = models.CharField(max_length=100)
+    url = models.URLField(max_length=500)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    added_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='social_links',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('order', 'created_at')
+
+    def __str__(self):
+        return self.name
+
+
+class SocialAccount(models.Model):
+    """An OAuth-connected social network account used for auto-publishing."""
+
+    class Platform(models.TextChoices):
+        LINKEDIN = 'LINKEDIN', 'LinkedIn'
+        YOUTUBE = 'YOUTUBE', 'YouTube'
+        TIKTOK = 'TIKTOK', 'TikTok'
+
+    platform = models.CharField(max_length=20, choices=Platform.choices)
+    account_name = models.CharField(max_length=255, blank=True)
+    external_account_id = models.CharField(max_length=255, blank=True)
+    access_token = models.TextField()
+    refresh_token = models.TextField(blank=True)
+    token_expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    connected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='social_accounts',
+    )
+    connected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('platform',)
+
+    def __str__(self):
+        return f'{self.get_platform_display()} - {self.account_name or self.external_account_id}'
+
+
+class SocialPostAttempt(models.Model):
+    """Records the result of pushing a PublicPost to a connected social account."""
+
+    class Status(models.TextChoices):
+        SENT = 'SENT', 'Envoyé'
+        FAILED = 'FAILED', 'Échec'
+        SKIPPED = 'SKIPPED', 'Ignoré'
+
+    post = models.ForeignKey(PublicPost, on_delete=models.CASCADE, related_name='social_attempts')
+    account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE, related_name='post_attempts')
+    status = models.CharField(max_length=20, choices=Status.choices)
+    detail = models.CharField(max_length=500, blank=True)
+    external_url = models.URLField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'{self.account.platform} - {self.post.title} - {self.status}'
 
 
 class PublicMedia(models.Model):

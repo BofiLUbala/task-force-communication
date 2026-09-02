@@ -12,6 +12,19 @@
 }
 .page-header p { color: rgba(255,255,255,0.85); margin: 0; font-size: 1rem; }
 
+.page-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+.page-back-link:hover { color: var(--white); }
+.page-back-link .material-symbols-outlined { font-size: 1.1rem; }
+
 .listing-layout {
   max-width: 1440px;
   margin: 0 auto;
@@ -104,7 +117,11 @@
   min-height: 160px;
 }
 .masonry-item img { width: 100%; display: block; }
+.masonry-item video { width: 100%; min-height: 200px; display: block; background: #001b3d; }
 .masonry-empty { column-span: all; color: rgba(255,255,255,0.6); padding: 24px 0; }
+.video-caption { padding: 12px 14px 14px; }
+.video-caption strong { display: block; font-size: 0.85rem; color: var(--white); margin-bottom: 3px; }
+.video-caption span { font-size: 0.72rem; color: rgba(255,255,255,0.6); }
 .play-icon {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;

@@ -1,6 +1,8 @@
 import './PublicFooter.css';
+import usePreferences from '../hooks/usePreferences';
 
 export default function PublicFooter() {
+  const { tr } = usePreferences();
   return (
     <footer className="public-footer">
       <div className="footer-inner">
@@ -11,16 +13,18 @@ export default function PublicFooter() {
             </div>
           </div>
           <p>
-            Task Force Présidentielle chargée du suivi et de l'évaluation des projets
-            d'infrastructures de la République Démocratique du Congo.
+            {tr(
+              "Task Force Présidentielle chargée du suivi et de l'évaluation des projets d'infrastructures de la République Démocratique du Congo.",
+              'Presidential Task Force responsible for monitoring and evaluating infrastructure projects in the Democratic Republic of the Congo.',
+            )}
           </p>
         </div>
         <div>
-          <h5>Liens Utiles</h5>
-          <a href="#">Portail du Gouvernement</a>
-          <a href="#">Ministère des Finances</a>
-          <a href="#">Journal Officiel</a>
-          <a href="#">Mentions Légales</a>
+          <h5>{tr('Liens utiles', 'Useful links')}</h5>
+          <a href="#">{tr('Portail du Gouvernement', 'Government portal')}</a>
+          <a href="#">{tr('Ministère des Finances', 'Ministry of Finance')}</a>
+          <a href="#">{tr('Journal officiel', 'Official Gazette')}</a>
+          <a href="#">{tr('Mentions légales', 'Legal notice')}</a>
         </div>
         <div>
           <h5>Contact</h5>
@@ -29,7 +33,7 @@ export default function PublicFooter() {
         </div>
       </div>
       <div className="footer-bottom">
-        © {new Date().getFullYear()} Task Force Présidentielle, RDC. Tous droits réservés.
+        © {new Date().getFullYear()} Task Force Présidentielle, RDC. {tr('Tous droits réservés.', 'All rights reserved.')}
       </div>
     </footer>
   );

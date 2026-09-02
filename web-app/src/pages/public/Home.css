@@ -56,6 +56,57 @@
 .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .hero-btn { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 32px; }
 
+.social-follow-bar {
+  position: relative;
+  background: var(--primary);
+  background-image: linear-gradient(120deg, var(--primary) 0%, var(--primary-container) 100%);
+  padding: 28px 40px;
+}
+.social-follow-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.social-follow-heading { display: flex; align-items: center; gap: 14px; color: var(--white); }
+.social-follow-heading > .material-symbols-outlined {
+  width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.14); font-size: 26px; color: var(--gold);
+}
+.social-follow-heading h3 { margin: 0 0 2px; font-size: 1.15rem; font-weight: 700; }
+.social-follow-heading p { margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+
+.social-follow-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.social-follow-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px 10px 12px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--primary);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.social-follow-link:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+.social-follow-link .material-symbols-outlined {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--social-color, var(--primary));
+  color: #fff; font-size: 19px;
+}
+
+@media (max-width: 640px) {
+  .social-follow-bar { padding: 22px 16px; }
+  .social-follow-inner { flex-direction: column; align-items: flex-start; }
+  .social-follow-name { display: none; }
+  .social-follow-link { padding: 10px; }
+}
+
 .content-wrap {
   max-width: 1440px;
   margin: 0 auto;
@@ -157,6 +208,18 @@
 .video-playlist button span { display: block; color: var(--gold); font-weight: 800; margin-bottom: 3px; }
 .video-playlist button.active { border-color: var(--primary); background: var(--surface-container-low); color: var(--primary); font-weight: 700; }
 
+.video-empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--on-surface-variant);
+}
+.video-empty .material-symbols-outlined { font-size: 40px; color: var(--outline); }
+.video-empty p { margin: 0; font-size: 0.9rem; }
+
 .featured-image {
   width: 40%;
   min-height: 220px;
@@ -233,6 +296,36 @@
 .pdf-icon { color: var(--gold); margin-top: 2px; }
 .li-title { font-size: 0.875rem; font-weight: 600; color: var(--on-surface); margin: 0; }
 .li-sub { font-size: 0.75rem; color: var(--outline); margin: 2px 0 0; }
+
+.newsletter-card {
+  background: var(--surface-container-high, #dce9ff);
+  border: 1px solid rgba(195,198,211,0.25);
+  border-radius: 0.75rem;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.newsletter-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--gold); color: var(--primary);
+  font-size: 22px; margin-bottom: 14px;
+}
+.newsletter-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--primary); margin: 0 0 8px; }
+.newsletter-card p { font-size: 0.88rem; color: var(--on-surface-variant); line-height: 1.5; margin: 0 0 16px; }
+
+.newsletter-form { display: flex; flex-direction: column; gap: 10px; }
+.newsletter-form input {
+  height: 42px; padding: 0 14px;
+  border-radius: 0.5rem; border: 1.5px solid var(--outline-variant);
+  background: var(--surface); font-family: inherit; font-size: 0.9rem; outline: none;
+}
+.newsletter-form input:focus { border-color: var(--secondary-fixed-dim, var(--gold)); box-shadow: 0 0 0 3px rgba(233, 196, 0, 0.25); }
+.newsletter-form .btn { width: 100%; padding: 11px; font-size: 0.88rem; }
+
+.newsletter-success {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--status-validated, #2f855a); font-size: 0.9rem; font-weight: 600; margin: 0;
+}
 
 .transparency-card {
   background: var(--primary);
