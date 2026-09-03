@@ -1,6 +1,7 @@
 import secrets
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.utils.text import slugify
@@ -98,7 +99,7 @@ class PublicPostViewSet(viewsets.ModelViewSet):
         return (permissions.IsAuthenticated(), IsHierarchy())
 
     def get_queryset(self):
-        qs = PublicPost.objects.all().prefetch_related('gallery')
+        qs = PublicPost.objects.all().prefetch_related('gallery', 'social_attempts__account')
         if self.action in ('list', 'retrieve') and not (
             self.request.user.is_authenticated and self.request.user.is_hierarchy
         ):
@@ -251,7 +252,11 @@ class SocialOAuthStartView(APIView):
     def get(self, request, platform):
         platform = platform.upper()
         state = secrets.token_urlsafe(24)
-        request.session[f'social_oauth_state_{platform}'] = state
+        # Stored in the server-side cache rather than the session: the SPA
+        # (port 5173) and API (port 8000) are different origins in dev, and
+        # browsers don't reliably round-trip a session cookie through the
+        # provider's top-level redirect back in that setup.
+        cache.set(f'social_oauth_state:{state}', platform, timeout=600)
         try:
             url = social_oauth.authorize_url(platform, state)
         except social_oauth.OAuthError as exc:
@@ -261,18 +266,20 @@ class SocialOAuthStartView(APIView):
 
 class SocialOAuthCallbackView(APIView):
     """Public redirect target for the provider's OAuth callback. Validated
-    via the state token stored in the initiating hierarchy user's session."""
+    via the state token stored server-side when the flow started."""
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request, platform):
         platform = platform.upper()
         code = request.query_params.get('code')
         state = request.query_params.get('state')
-        expected_state = request.session.get(f'social_oauth_state_{platform}')
+        cache_key = f'social_oauth_state:{state}' if state else None
+        expected_platform = cache.get(cache_key) if cache_key else None
         dashboard_url = f'{settings.FRONTEND_URL}/espace/reseaux-sociaux'
 
-        if not code or not state or state != expected_state:
+        if not code or not state or expected_platform != platform:
             return HttpResponseRedirect(f'{dashboard_url}?social_error=state')
+        cache.delete(cache_key)
 
         try:
             tokens = social_oauth.exchange_code(platform, code)
@@ -283,6 +290,10 @@ class SocialOAuthCallbackView(APIView):
         external_account_id, account_name = '', ''
         if platform == 'LINKEDIN':
             external_account_id, account_name = social_oauth.get_linkedin_identity(access_token)
+        elif platform == 'FACEBOOK':
+            external_account_id, account_name, page_token = social_oauth.get_facebook_page(access_token)
+            if page_token:
+                access_token = page_token
 
         SocialAccount.objects.update_or_create(
             platform=platform,

@@ -137,6 +137,7 @@ class SocialAccount(models.Model):
         LINKEDIN = 'LINKEDIN', 'LinkedIn'
         YOUTUBE = 'YOUTUBE', 'YouTube'
         TIKTOK = 'TIKTOK', 'TikTok'
+        FACEBOOK = 'FACEBOOK', 'Facebook'
 
     platform = models.CharField(max_length=20, choices=Platform.choices)
     account_name = models.CharField(max_length=255, blank=True)

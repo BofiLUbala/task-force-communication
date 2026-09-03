@@ -2,28 +2,12 @@ import { useEffect, useState } from 'react';
 import client from '../../api/client';
 import './Home.css';
 import usePreferences from '../../hooks/usePreferences';
-
-const SOCIAL_ICONS = [
-  { match: /facebook/i, icon: 'thumb_up', color: '#1877F2' },
-  { match: /instagram/i, icon: 'photo_camera', color: '#E1306C' },
-  { match: /twitter|^x$|\bx\b/i, icon: 'tag', color: '#000000' },
-  { match: /youtube/i, icon: 'smart_display', color: '#FF0000' },
-  { match: /linkedin/i, icon: 'work', color: '#0A66C2' },
-  { match: /tiktok/i, icon: 'music_note', color: '#000000' },
-  { match: /whatsapp/i, icon: 'chat', color: '#25D366' },
-  { match: /telegram/i, icon: 'send', color: '#26A5E4' },
-];
-
-function socialIconFor(name) {
-  const found = SOCIAL_ICONS.find((entry) => entry.match.test(name || ''));
-  return found || { icon: 'public', color: 'var(--primary)' };
-}
+import { socialIconFor } from '../../utils/socialIcons';
 
 export default function Home() {
   const { tr } = usePreferences();
   const [briefs, setBriefs] = useState([]);
   const [videos, setVideos] = useState([]);
-  const [activeVideo, setActiveVideo] = useState(0);
   const [socialLinks, setSocialLinks] = useState([]);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSent, setNewsletterSent] = useState(false);
@@ -128,42 +112,22 @@ export default function Home() {
             {videos.length > 0 ? (
               <article className="featured-card video-demo-card">
                 <div className="video-player-wrap">
-                  <video
-                    key={videos[activeVideo].id}
-                    controls
-                    preload="metadata"
-                    playsInline
-                    autoPlay={activeVideo !== 0}
-                    aria-label={videos[activeVideo].title}
-                    onEnded={() => setActiveVideo((activeVideo + 1) % videos.length)}
-                  >
-                    <source src={videos[activeVideo].src} />
+                  <video controls preload="metadata" playsInline aria-label={videos[0].title}>
+                    <source src={videos[0].src} />
                     Votre navigateur ne prend pas en charge la lecture vidéo.
                   </video>
                   <div className="active-video-info">
-                    <span className="video-index">{String(activeVideo + 1).padStart(2, '0')}</span>
                     <div>
-                      <h5>{videos[activeVideo].title}</h5>
-                      <p>{videos[activeVideo].description}</p>
+                      <h5>{videos[0].title}</h5>
+                      <p>{videos[0].description}</p>
                     </div>
-                    <span className="video-position">{activeVideo + 1} / {videos.length}</span>
                   </div>
                 </div>
 
-                <div className="video-playlist" aria-label={tr('Liste des vidéos publiées', 'List of published videos')}>
-                  {videos.map((video, index) => (
-                    <button
-                      type="button"
-                      className={index === activeVideo ? 'active' : ''}
-                      key={video.id}
-                      onClick={() => setActiveVideo(index)}
-                      aria-current={index === activeVideo ? 'true' : undefined}
-                    >
-                      <span>{String(index + 1).padStart(2, '0')}</span>
-                      {video.title}
-                    </button>
-                  ))}
-                </div>
+                <a href="/videos" className="btn btn-gold video-demo-cta">
+                  <span className="material-symbols-outlined">playlist_play</span>
+                  {tr('Voir toutes les vidéos', 'See all videos')}
+                </a>
               </article>
             ) : (
               <article className="featured-card video-demo-card video-empty">
@@ -172,16 +136,52 @@ export default function Home() {
               </article>
             )}
 
-            <div className="brief-grid">
-              {(briefs.length ? briefs : placeholderBriefs).map((b, i) => (
-                <div className={`brief-card ${i % 2 === 0 ? 'accent-gold' : 'accent-navy'}`} key={b.id || i}>
-                  <div>
-                    <h5>{b.title}</h5>
-                    <p>{b.excerpt}</p>
-                  </div>
-                  <a href="/actualites">Lire la suite <span className="material-symbols-outlined">chevron_right</span></a>
-                </div>
-              ))}
+            <div className="communique-newsletter-card">
+              <div className="cn-brief">
+                {(() => {
+                  const b = (briefs.length ? briefs : placeholderBriefs)[0];
+                  return (
+                    <>
+                      <span className="cn-tag">{tr('Communiqué', 'Release')}</span>
+                      <h5>{b.title}</h5>
+                      <p>{b.excerpt}</p>
+                      <a href="/actualites">{tr('Lire la suite', 'Read more')} <span className="material-symbols-outlined">chevron_right</span></a>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="cn-divider" />
+
+              <div className="cn-newsletter">
+                <span className="material-symbols-outlined newsletter-icon">mail</span>
+                <h3>{tr('Newsletter', 'Newsletter')}</h3>
+                <p>
+                  {tr(
+                    'Recevez les communiqués officiels et les actualités de la Task Force directement par e-mail.',
+                    'Get official releases and Task Force news delivered straight to your inbox.',
+                  )}
+                </p>
+                {newsletterSent ? (
+                  <p className="newsletter-success">
+                    <span className="material-symbols-outlined">check_circle</span>
+                    {tr('Merci ! Vous êtes inscrit.', 'Thank you! You are now subscribed.')}
+                  </p>
+                ) : (
+                  <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
+                    <input
+                      type="email"
+                      required
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      placeholder={tr('Votre adresse e-mail', 'Your email address')}
+                    />
+                    <button type="submit" className="btn btn-navy">
+                      {tr("S'abonner", 'Subscribe')}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
 
@@ -211,36 +211,6 @@ export default function Home() {
                   </div>
                 </li>
               </ul>
-            </div>
-
-            <div className="newsletter-card">
-              <span className="material-symbols-outlined newsletter-icon">mail</span>
-              <h3>{tr('Communiqués & Newsletter', 'Releases & Newsletter')}</h3>
-              <p>
-                {tr(
-                  'Recevez les communiqués officiels et les actualités de la Task Force directement par e-mail.',
-                  'Get official releases and Task Force news delivered straight to your inbox.',
-                )}
-              </p>
-              {newsletterSent ? (
-                <p className="newsletter-success">
-                  <span className="material-symbols-outlined">check_circle</span>
-                  {tr('Merci ! Vous êtes inscrit.', 'Thank you! You are now subscribed.')}
-                </p>
-              ) : (
-                <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                  <input
-                    type="email"
-                    required
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    placeholder={tr('Votre adresse e-mail', 'Your email address')}
-                  />
-                  <button type="submit" className="btn btn-navy">
-                    {tr("S'abonner", 'Subscribe')}
-                  </button>
-                </form>
-              )}
             </div>
 
             <div className="transparency-card">

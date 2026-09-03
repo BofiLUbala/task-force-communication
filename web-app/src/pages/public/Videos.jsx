@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import client from '../../api/client';
 import './Listing.css';
 import usePreferences from '../../hooks/usePreferences';
+import { socialIconFor } from '../../utils/socialIcons';
 
 export default function Videos() {
   const { tr, language } = usePreferences();
   const [videos, setVideos] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     client.get('/posts/')
@@ -21,6 +23,7 @@ export default function Videos() {
             caption: media.caption || post.excerpt,
             date: post.published_at || post.created_at,
             src: media.file,
+            platformLinks: post.platform_links || [],
           }))));
       })
       .catch(() => setVideos([]))
@@ -41,18 +44,59 @@ export default function Videos() {
         {loaded && videos.length === 0 && (
           <p className="masonry-empty">{tr('Aucune vidéo publiée pour le moment.', 'No video published yet.')}</p>
         )}
-        {videos.map((item) => (
-          <div className="masonry-item" key={item.id}>
-            <video controls preload="metadata" playsInline aria-label={item.title}>
-              <source src={item.src} />
-              Votre navigateur ne prend pas en charge la lecture vidéo.
-            </video>
-            <div className="video-caption">
-              <strong>{item.title}</strong>
-              <span>{new Date(item.date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+        {videos.map((item) => {
+          const expanded = expandedId === item.id;
+          return (
+            <div className="masonry-item" key={item.id}>
+              <video controls preload="metadata" playsInline aria-label={item.title}>
+                <source src={item.src} />
+                Votre navigateur ne prend pas en charge la lecture vidéo.
+              </video>
+              <div className="video-caption">
+                <button
+                  type="button"
+                  className="video-name-toggle"
+                  onClick={() => setExpandedId(expanded ? null : item.id)}
+                  aria-expanded={expanded}
+                >
+                  <strong>{item.title}</strong>
+                  <span className="material-symbols-outlined">{expanded ? 'expand_less' : 'expand_more'}</span>
+                </button>
+                <span>{new Date(item.date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+
+                {expanded && (
+                  <div className="video-platforms">
+                    <p className="video-platforms-label">{tr('Regarder sur', 'Watch on')}</p>
+                    {item.platformLinks.length > 0 ? (
+                      <div className="video-platform-links">
+                        {item.platformLinks.map((link) => {
+                          const { icon, color } = socialIconFor(link.platform_display || link.platform);
+                          return (
+                            <a
+                              key={link.platform}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="video-platform-link"
+                              style={{ '--social-color': color }}
+                            >
+                              <span className="material-symbols-outlined">{icon}</span>
+                              {link.platform_display}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="video-platforms-empty">
+                        {tr('Pas encore disponible sur les réseaux sociaux.', 'Not yet available on social media.')}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

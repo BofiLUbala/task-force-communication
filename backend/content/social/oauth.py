@@ -21,6 +21,8 @@ def _redirect_uri(platform):
 LINKEDIN_SCOPES = 'openid profile w_member_social'
 GOOGLE_SCOPES = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'
 TIKTOK_SCOPES = 'video.publish video.upload user.info.basic'
+FACEBOOK_SCOPES = 'pages_show_list,pages_manage_posts,pages_read_engagement'
+FACEBOOK_API_VERSION = 'v21.0'
 
 
 def is_configured(platform):
@@ -28,6 +30,7 @@ def is_configured(platform):
         'LINKEDIN': bool(settings.LINKEDIN_CLIENT_ID and settings.LINKEDIN_CLIENT_SECRET),
         'YOUTUBE': bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET),
         'TIKTOK': bool(settings.TIKTOK_CLIENT_KEY and settings.TIKTOK_CLIENT_SECRET),
+        'FACEBOOK': bool(settings.FACEBOOK_APP_ID and settings.FACEBOOK_APP_SECRET),
     }.get(platform, False)
 
 
@@ -67,6 +70,16 @@ def authorize_url(platform, state):
         }
         return f'https://www.tiktok.com/v2/auth/authorize/?{urlencode(params)}'
 
+    if platform == 'FACEBOOK':
+        params = {
+            'response_type': 'code',
+            'client_id': settings.FACEBOOK_APP_ID,
+            'redirect_uri': _redirect_uri(platform),
+            'state': state,
+            'scope': FACEBOOK_SCOPES,
+        }
+        return f'https://www.facebook.com/{FACEBOOK_API_VERSION}/dialog/oauth?{urlencode(params)}'
+
     raise OAuthError(f'Plateforme inconnue: {platform}')
 
 
@@ -98,12 +111,37 @@ def exchange_code(platform, code):
             'client_key': settings.TIKTOK_CLIENT_KEY,
             'client_secret': settings.TIKTOK_CLIENT_SECRET,
         }, headers={'Content-Type': 'application/x-www-form-urlencoded'}, timeout=15)
+    elif platform == 'FACEBOOK':
+        resp = requests.get(f'https://graph.facebook.com/{FACEBOOK_API_VERSION}/oauth/access_token', params={
+            'client_id': settings.FACEBOOK_APP_ID,
+            'client_secret': settings.FACEBOOK_APP_SECRET,
+            'redirect_uri': _redirect_uri(platform),
+            'code': code,
+        }, timeout=15)
     else:
         raise OAuthError(f'Plateforme inconnue: {platform}')
 
     if not resp.ok:
         raise OAuthError(f'Échec de l’échange du code {platform}: {resp.text[:300]}')
     return resp.json()
+
+
+def get_facebook_page(user_access_token):
+    """Facebook publishes as a Page, not the logged-in user, so the user
+    token from the OAuth exchange must be swapped for that Page's own
+    access token. Returns (page_id, page_name, page_access_token)."""
+    resp = requests.get(
+        f'https://graph.facebook.com/{FACEBOOK_API_VERSION}/me/accounts',
+        params={'access_token': user_access_token},
+        timeout=15,
+    )
+    if not resp.ok:
+        return '', '', ''
+    pages = resp.json().get('data', [])
+    if not pages:
+        return '', '', ''
+    page = pages[0]
+    return page.get('id', ''), page.get('name', ''), page.get('access_token', '')
 
 
 def get_linkedin_identity(access_token):

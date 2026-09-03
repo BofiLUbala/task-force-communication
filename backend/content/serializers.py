@@ -55,15 +55,33 @@ class PublicMediaSerializer(serializers.ModelSerializer):
 class PublicPostSerializer(serializers.ModelSerializer):
     gallery = PublicMediaSerializer(many=True, read_only=True)
     published_by_name = serializers.CharField(source='published_by.get_full_name', read_only=True)
+    platform_links = serializers.SerializerMethodField()
 
     class Meta:
         model = PublicPost
         fields = (
             'id', 'title', 'slug', 'category', 'excerpt', 'body', 'cover_image', 'attachment',
             'source_report', 'published_by', 'published_by_name', 'is_published',
-            'published_at', 'created_at', 'gallery',
+            'published_at', 'created_at', 'gallery', 'platform_links',
         )
-        read_only_fields = ('id', 'slug', 'published_by', 'published_by_name', 'published_at', 'created_at', 'gallery')
+        read_only_fields = (
+            'id', 'slug', 'published_by', 'published_by_name', 'published_at', 'created_at',
+            'gallery', 'platform_links',
+        )
+
+    def get_platform_links(self, post):
+        attempts = getattr(post, 'social_attempts', None)
+        if attempts is None:
+            return []
+        return [
+            {
+                'platform': attempt.account.platform,
+                'platform_display': attempt.account.get_platform_display(),
+                'url': attempt.external_url,
+            }
+            for attempt in attempts.all()
+            if attempt.status == SocialPostAttempt.Status.SENT and attempt.external_url
+        ]
 
 
 class EditorImageSerializer(serializers.ModelSerializer):

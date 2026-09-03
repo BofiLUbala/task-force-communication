@@ -1,6 +1,7 @@
 """
 Django settings for the Task Force Présidentielle backend.
 """
+# touch to force autoreload after .env changes (v3)
 
 from datetime import timedelta
 from pathlib import Path
@@ -166,3 +167,6 @@ GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 
 TIKTOK_CLIENT_KEY = config('TIKTOK_CLIENT_KEY', default='')
 TIKTOK_CLIENT_SECRET = config('TIKTOK_CLIENT_SECRET', default='')
+
+FACEBOOK_APP_ID = config('FACEBOOK_APP_ID', default='')
+FACEBOOK_APP_SECRET = config('FACEBOOK_APP_SECRET', default='')

@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap');
+/* Material Symbols + Inter/Montserrat are now preloaded via <link> tags in index.html
+   (loads earlier than a CSS @import, avoiding a flash of unstyled icon ligature text) */
 
 :root {
   /* Stitch design tokens — stitch_task_force_portal_showcase/DESIGN.md */
@@ -79,7 +79,7 @@ body {
 }
 
 body, .public-header, .dash-shell, .dash-header, .news-item, .sidebar-box, .directives-card,
-.featured-card, .brief-card, .publication-form, .stat-box, .data-table, .report-form,
+.featured-card, .communique-newsletter-card, .publication-form, .stat-box, .data-table, .report-form,
 .contact-form input, .contact-form textarea { transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
 
 :root[data-theme='dark'] .public-header { background: rgba(8,20,34,.9); }

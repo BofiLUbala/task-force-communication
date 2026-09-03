@@ -154,10 +154,30 @@ def publish_to_tiktok(post, account, post_url):
     return _record(post, account, SocialPostAttempt.Status.FAILED, detail=upload_resp.text[:500])
 
 
+def publish_to_facebook(post, account, post_url):
+    resp = requests.post(
+        f'https://graph.facebook.com/v21.0/{account.external_account_id}/feed',
+        data={
+            'message': f'{post.title}\n\n{post.excerpt or post.body[:400]}\n\n{post_url}',
+            'access_token': account.access_token,
+        },
+        timeout=20,
+    )
+    if resp.ok:
+        post_id = resp.json().get('id', '')
+        return _record(
+            post, account, SocialPostAttempt.Status.SENT,
+            detail=resp.text[:300],
+            external_url=f'https://www.facebook.com/{post_id}' if post_id else '',
+        )
+    return _record(post, account, SocialPostAttempt.Status.FAILED, detail=resp.text[:500])
+
+
 PUBLISHERS = {
     'LINKEDIN': publish_to_linkedin,
     'YOUTUBE': publish_to_youtube,
     'TIKTOK': publish_to_tiktok,
+    'FACEBOOK': publish_to_facebook,
 }
 
 
