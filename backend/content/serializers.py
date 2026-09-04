@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from .models import (
     EditorImage,
+    NewsletterDelivery,
+    NewsletterSubscriber,
     PublicMedia,
     PublicPost,
     Report,
@@ -48,8 +50,22 @@ class ReportReviewSerializer(serializers.Serializer):
 class PublicMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = PublicMedia
-        fields = ('id', 'file', 'media_type', 'caption')
+        fields = ('id', 'file', 'media_type', 'title', 'caption', 'social_links')
         read_only_fields = ('id',)
+
+    def validate_social_links(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError('Les liens sociaux doivent être une liste.')
+        cleaned = []
+        for link in value:
+            if not isinstance(link, dict) or not link.get('url'):
+                continue
+            url = serializers.URLField().run_validation(link['url'])
+            cleaned.append({
+                'platform': str(link.get('platform', '')).strip() or 'Lien',
+                'url': url,
+            })
+        return cleaned
 
 
 class PublicPostSerializer(serializers.ModelSerializer):
@@ -61,12 +77,14 @@ class PublicPostSerializer(serializers.ModelSerializer):
         model = PublicPost
         fields = (
             'id', 'title', 'slug', 'category', 'excerpt', 'body', 'cover_image', 'attachment',
+            'newsletter_subject', 'newsletter_preview_text', 'newsletter_sender_name',
+            'newsletter_sent_at', 'newsletter_recipient_count',
             'source_report', 'published_by', 'published_by_name', 'is_published',
             'published_at', 'created_at', 'gallery', 'platform_links',
         )
         read_only_fields = (
             'id', 'slug', 'published_by', 'published_by_name', 'published_at', 'created_at',
-            'gallery', 'platform_links',
+            'gallery', 'platform_links', 'newsletter_sent_at', 'newsletter_recipient_count',
         )
 
     def get_platform_links(self, post):
@@ -82,6 +100,31 @@ class PublicPostSerializer(serializers.ModelSerializer):
             for attempt in attempts.all()
             if attempt.status == SocialPostAttempt.Status.SENT and attempt.external_url
         ]
+
+
+class NewsletterSubscriberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsletterSubscriber
+        fields = ('id', 'email', 'name', 'is_active', 'subscribed_at')
+        read_only_fields = ('id', 'is_active', 'subscribed_at')
+        extra_kwargs = {'email': {'validators': []}}
+        extra_kwargs = {'email': {'validators': []}}
+
+
+class NewsletterDeliverySerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='subscriber.email', read_only=True)
+
+    class Meta:
+        model = NewsletterDelivery
+        fields = ('id', 'email', 'status', 'error', 'sent_at')
+        read_only_fields = fields
+
+
+class ContactMessageSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    subject = serializers.CharField(max_length=200)
+    message = serializers.CharField(max_length=5000)
 
 
 class EditorImageSerializer(serializers.ModelSerializer):

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../../api/client';
+import Pagination from '../../components/Pagination';
 import './Listing.css';
 import usePreferences from '../../hooks/usePreferences';
+
+const PAGE_SIZE = 20;
 
 const categories = [
   { value: '', label: 'Toutes' },
@@ -14,16 +17,29 @@ const categories = [
 export default function Actualites() {
   const { tr, language } = usePreferences();
   const [posts, setPosts] = useState([]);
+  const [count, setCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    client.get('/posts/', { params: category ? { category } : {} })
-      .then((res) => setPosts(res.data.results || res.data))
-      .catch(() => setPosts([]));
-  }, [category]);
+    setLoading(true);
+    client.get('/posts/', { params: { ...(category ? { category } : { exclude_category: 'NEWSLETTER' }), page } })
+      .then((res) => {
+        setPosts(res.data.results || res.data);
+        setCount(res.data.count ?? (res.data.results || res.data).length);
+      })
+      .catch(() => { setPosts([]); setCount(0); })
+      .finally(() => setLoading(false));
+  }, [category, page]);
 
-  const filtered = posts.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()));
+  const filtered = search ? posts.filter((p) => p.title.toLowerCase().includes(search.toLowerCase())) : posts;
+
+  function selectCategory(value) {
+    setCategory(value);
+    setPage(1);
+  }
 
   return (
     <>
@@ -39,20 +55,19 @@ export default function Actualites() {
       </div>
       <div className="listing-layout">
         <div className="news-list">
-          {filtered.length === 0 && <p style={{ color: 'var(--text-muted)' }}>{tr('Aucune publication trouvée.', 'No publications found.')}</p>}
+          {!loading && filtered.length === 0 && <p style={{ color: 'var(--text-muted)' }}>{tr('Aucune publication trouvée.', 'No publications found.')}</p>}
           {filtered.map((post) => (
-            <article className="news-item" key={post.id}>
-              <div className="news-thumb" style={post.cover_image ? { backgroundImage: `url(${post.cover_image})`, backgroundSize: 'cover' } : undefined} />
-              <div className="news-body">
-                <div className="news-date">
-                  <span className="material-symbols-outlined">calendar_today</span>
-                  {new Date(post.published_at || post.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
-                </div>
-                <h3 className="news-title">{post.title}</h3>
-                <p className="news-excerpt">{post.excerpt}</p>
+            <Link to={`/publications/${post.slug}`} className="news-item-title-only" key={post.id}>
+              <div className="news-date">
+                <span className="material-symbols-outlined">calendar_today</span>
+                {new Date(post.published_at || post.created_at).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US')}
               </div>
-            </article>
+              <h3>{post.title}</h3>
+              <span className="material-symbols-outlined news-item-arrow">chevron_right</span>
+            </Link>
           ))}
+
+          {!search && <Pagination page={page} pageSize={PAGE_SIZE} count={count} onChange={setPage} />}
         </div>
         <aside className="sidebar">
           <input
@@ -68,7 +83,7 @@ export default function Actualites() {
                 <li
                   key={c.value}
                   style={{ cursor: 'pointer', fontWeight: category === c.value ? 700 : 400 }}
-                  onClick={() => setCategory(c.value)}
+                  onClick={() => selectCategory(c.value)}
                 >
                   {tr(c.label, ({ Toutes: 'All', Communiqués: 'Releases', Actualités: 'News', Activités: 'Activities' })[c.label] || c.label)}
                 </li>

@@ -12,6 +12,7 @@ export default function HierarchyDashboard() {
     { to: '/espace/publications/image', label: tr('Publier une image', 'Publish an image') },
     { to: '/espace/publications/video', label: tr('Publier une vidéo', 'Publish a video') },
     { to: '/espace/publications/communique', label: tr('Publier un communiqué', 'Publish a release') },
+    { to: '/espace/publications/newsletter', label: tr('Publier une newsletter', 'Publish a newsletter') },
     { to: '/espace/reseaux-sociaux', label: tr('Réseaux sociaux', 'Social media') },
     { to: '/espace/statistiques', label: tr('Statistiques', 'Statistics') },
   ];

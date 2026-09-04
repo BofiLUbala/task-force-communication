@@ -79,7 +79,7 @@ body {
 }
 
 body, .public-header, .dash-shell, .dash-header, .news-item, .sidebar-box, .directives-card,
-.featured-card, .communique-newsletter-card, .publication-form, .stat-box, .data-table, .report-form,
+.featured-card, .home-info-card, .publication-form, .stat-box, .data-table, .report-form,
 .contact-form input, .contact-form textarea { transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
 
 :root[data-theme='dark'] .public-header { background: rgba(8,20,34,.9); }

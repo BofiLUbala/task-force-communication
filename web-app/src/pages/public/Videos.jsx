@@ -19,11 +19,11 @@ export default function Videos() {
           .filter((media) => media.media_type === 'VIDEO')
           .map((media) => ({
             id: media.id,
-            title: post.title,
+            title: media.title || post.title,
             caption: media.caption || post.excerpt,
             date: post.published_at || post.created_at,
             src: media.file,
-            platformLinks: post.platform_links || [],
+            platformLinks: media.social_links?.length ? media.social_links : (post.platform_links || []),
           }))));
       })
       .catch(() => setVideos([]))
@@ -70,7 +70,8 @@ export default function Videos() {
                     {item.platformLinks.length > 0 ? (
                       <div className="video-platform-links">
                         {item.platformLinks.map((link) => {
-                          const { icon, color } = socialIconFor(link.platform_display || link.platform);
+                          const platformName = link.platform_display || link.platform;
+                          const { icon, color } = socialIconFor(platformName);
                           return (
                             <a
                               key={link.platform}
@@ -81,7 +82,7 @@ export default function Videos() {
                               style={{ '--social-color': color }}
                             >
                               <span className="material-symbols-outlined">{icon}</span>
-                              {link.platform_display}
+                              {platformName}
                             </a>
                           );
                         })}

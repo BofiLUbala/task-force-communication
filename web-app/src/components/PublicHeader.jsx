@@ -7,8 +7,8 @@ export default function PublicHeader() {
   const { tr } = usePreferences();
   const links = [
     { to: '/', label: tr('Accueil', 'Home'), end: true },
+    { to: '/a-propos', label: tr('À propos', 'About') },
     { to: '/actualites', label: tr('Actualités', 'News') },
-    { to: '/activites', label: tr('Rapports publics', 'Public reports') },
     { to: '/contact', label: tr('Contact', 'Contact') },
   ];
   return (

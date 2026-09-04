@@ -4,61 +4,112 @@ import './Home.css';
 import usePreferences from '../../hooks/usePreferences';
 import { socialIconFor } from '../../utils/socialIcons';
 
+const heroImages = [
+  '/couverture.jpeg',
+  '/couverture2.jpeg',
+  '/couverture3.jpeg',
+  '/couverture4.jpeg',
+  '/img1.jpeg',
+];
+
+const staffImages = [
+  '/img1.jpeg',
+  '/couverture2.jpeg',
+  '/couverture3.jpeg',
+  '/couverture4.jpeg',
+];
+
 export default function Home() {
   const { tr } = usePreferences();
-  const [briefs, setBriefs] = useState([]);
+  const [latestNewsletter, setLatestNewsletter] = useState(null);
   const [videos, setVideos] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSent, setNewsletterSent] = useState(false);
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [staffImageIndex, setStaffImageIndex] = useState(0);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [contactStatus, setContactStatus] = useState({ sending: false, message: '', error: '' });
+
+  async function sendContactMessage(event) {
+    event.preventDefault();
+    setContactStatus({ sending: true, message: '', error: '' });
+    try {
+      const { data } = await client.post('/contact/', contactForm);
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+      setContactStatus({ sending: false, message: data.detail, error: '' });
+    } catch (requestError) {
+      setContactStatus({ sending: false, message: '', error: requestError.response?.data?.detail || tr('Envoi impossible. Réessayez plus tard.', 'Unable to send. Please try again later.') });
+    }
+  }
 
   useEffect(() => {
     client.get('/posts/')
       .then((res) => {
         const posts = res.data.results || res.data;
-        setBriefs(posts.slice(0, 2));
         setVideos(posts.flatMap((post) => (post.gallery || [])
           .filter((media) => media.media_type === 'VIDEO')
           .map((media) => ({
             id: media.id,
-            title: post.title,
+            title: media.title || post.title,
             description: media.caption || post.excerpt,
             src: media.file,
+            socialLinks: media.social_links?.length ? media.social_links : (post.platform_links || []),
           }))));
       })
       .catch(() => {});
+    client.get('/posts/', { params: { category: 'NEWSLETTER' } })
+      .then((res) => setLatestNewsletter((res.data.results || res.data)[0] || null))
+      .catch(() => setLatestNewsletter(null));
     client.get('/social-links/')
       .then((res) => setSocialLinks(res.data.results || res.data))
       .catch(() => {});
   }, []);
 
-  function handleNewsletterSubmit(e) {
-    e.preventDefault();
-    if (!newsletterEmail.trim()) return;
-    setNewsletterSent(true);
-    setNewsletterEmail('');
-  }
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setStaffImageIndex((current) => (current + 1) % staffImages.length);
+    }, 6000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    heroImages.forEach((src) => {
+      const image = new Image();
+      image.src = src;
+    });
+    const intervalId = window.setInterval(() => {
+      setHeroImageIndex((current) => (current + 1) % heroImages.length);
+    }, 10000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
     <>
       <section className="hero">
-        <div className="hero-bg" />
+        <div className="hero-slideshow" aria-hidden="true">
+          {heroImages.map((src, index) => (
+            <div
+              className={`hero-bg${index === heroImageIndex ? ' is-active' : ''}`}
+              style={{ backgroundImage: `url(${src})` }}
+              key={src}
+            />
+          ))}
+        </div>
         <div className="hero-gradient" />
         <div className="hero-content">
           <img className="hero-flag" src="/flag-drc.svg" alt="Drapeau de la RDC" />
-          <h2 className="hero-title">{tr('Task Force Présidentielle', 'Presidential Task Force')}</h2>
-          <p className="hero-subtitle">
-            {tr('Supervision, Coordination et Transparence des Projets Stratégiques de la Nation.', 'Supervision, coordination and transparency for the nation’s strategic projects.')}
-          </p>
+          <h2 className="hero-title">
+            <span className="hero-title-main">{tr('Task Force Présidentielle', 'Presidential Task Force')}</span>
+          </h2>
           <div className="hero-actions">
-            <button className="btn btn-gold hero-btn">
-              <span className="material-symbols-outlined">description</span>
-              {tr('Derniers rapports', 'Latest reports')}
-            </button>
-            <button className="btn btn-outline hero-btn">
+            <a href="/newsletter" className="btn btn-gold hero-btn">
+              <span className="material-symbols-outlined">mail</span>
+              {tr('Newsletter', 'Newsletter')}
+            </a>
+            <a href="/communiques" className="btn btn-outline hero-btn">
               <span className="material-symbols-outlined">announcement</span>
               {tr('Communiqués', 'Releases')}
-            </button>
+            </a>
           </div>
         </div>
       </section>
@@ -109,126 +160,111 @@ export default function Home() {
               <a href="/videos">{tr('Voir toutes les vidéos', 'See all videos')} <span className="material-symbols-outlined">chevron_right</span></a>
             </div>
 
-            {videos.length > 0 ? (
-              <article className="featured-card video-demo-card">
-                <div className="video-player-wrap">
-                  <video controls preload="metadata" playsInline aria-label={videos[0].title}>
-                    <source src={videos[0].src} />
-                    Votre navigateur ne prend pas en charge la lecture vidéo.
-                  </video>
-                  <div className="active-video-info">
-                    <div>
-                      <h5>{videos[0].title}</h5>
-                      <p>{videos[0].description}</p>
-                    </div>
+            <div className="media-staff-grid">
+              <article className="featured-card video-demo-card videos-collection-card">
+                <div className="collection-card-heading">
+                  <span className="material-symbols-outlined">video_library</span>
+                  <div>
+                    <span>{tr('Médiathèque', 'Media library')}</span>
+                    <h4>{tr('Nos vidéos', 'Our videos')}</h4>
                   </div>
                 </div>
-
-                <a href="/videos" className="btn btn-gold video-demo-cta">
-                  <span className="material-symbols-outlined">playlist_play</span>
-                  {tr('Voir toutes les vidéos', 'See all videos')}
-                </a>
-              </article>
-            ) : (
-              <article className="featured-card video-demo-card video-empty">
-                <span className="material-symbols-outlined">videocam_off</span>
-                <p>{tr('Aucune vidéo publiée pour le moment.', 'No video published yet.')}</p>
-              </article>
-            )}
-
-            <div className="communique-newsletter-card">
-              <div className="cn-brief">
-                {(() => {
-                  const b = (briefs.length ? briefs : placeholderBriefs)[0];
-                  return (
-                    <>
-                      <span className="cn-tag">{tr('Communiqué', 'Release')}</span>
-                      <h5>{b.title}</h5>
-                      <p>{b.excerpt}</p>
-                      <a href="/actualites">{tr('Lire la suite', 'Read more')} <span className="material-symbols-outlined">chevron_right</span></a>
-                    </>
-                  );
-                })()}
-              </div>
-
-              <div className="cn-divider" />
-
-              <div className="cn-newsletter">
-                <span className="material-symbols-outlined newsletter-icon">mail</span>
-                <h3>{tr('Newsletter', 'Newsletter')}</h3>
-                <p>
-                  {tr(
-                    'Recevez les communiqués officiels et les actualités de la Task Force directement par e-mail.',
-                    'Get official releases and Task Force news delivered straight to your inbox.',
-                  )}
-                </p>
-                {newsletterSent ? (
-                  <p className="newsletter-success">
-                    <span className="material-symbols-outlined">check_circle</span>
-                    {tr('Merci ! Vous êtes inscrit.', 'Thank you! You are now subscribed.')}
-                  </p>
+                {videos.length > 0 ? (
+                  <>
+                    <div className="video-player-wrap">
+                      <video key={videos[activeVideoIndex].id} controls preload="metadata" playsInline aria-label={videos[activeVideoIndex].title}>
+                        <source src={videos[activeVideoIndex].src} />
+                        Votre navigateur ne prend pas en charge la lecture vidéo.
+                      </video>
+                    </div>
+                  </>
                 ) : (
-                  <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-                    <input
-                      type="email"
-                      required
-                      value={newsletterEmail}
-                      onChange={(e) => setNewsletterEmail(e.target.value)}
-                      placeholder={tr('Votre adresse e-mail', 'Your email address')}
+                  <div className="video-empty">
+                    <span className="material-symbols-outlined">videocam_off</span>
+                    <p>{tr('Aucune vidéo publiée pour le moment.', 'No video published yet.')}</p>
+                  </div>
+                )}
+              </article>
+
+              <article className="staff-photo-card staff-collection-card">
+                <div className="collection-card-heading staff-heading">
+                  <span className="material-symbols-outlined">groups</span>
+                  <div>
+                    <span>{tr('Notre équipe', 'Our team')}</span>
+                    <h4>{tr('Membres du staff', 'Staff members')}</h4>
+                  </div>
+                </div>
+                <div className="staff-photo-stage">
+                  {staffImages.map((src, index) => (
+                    <img
+                      className={index === staffImageIndex ? 'is-active' : ''}
+                      src={src}
+                      alt={tr(`Équipe de la Task Force — photo ${index + 1}`, `Task Force team — photo ${index + 1}`)}
+                      key={src}
                     />
-                    <button type="submit" className="btn btn-navy">
-                      {tr("S'abonner", 'Subscribe')}
-                    </button>
-                  </form>
+                  ))}
+                </div>
+                <div className="active-video-info staff-photo-info">
+                  <h5>{tr('Au service de la salubrité de Kinshasa', 'Serving a cleaner Kinshasa')}</h5>
+                  <p>{tr('Découvrez les membres mobilisés sur le terrain.', 'Meet the team members working in the field.')}</p>
+                  <div className="staff-photo-dots" aria-label={tr('Choisir une photo', 'Choose a photo')}>
+                    {staffImages.map((src, index) => (
+                      <button
+                        type="button"
+                        className={index === staffImageIndex ? 'is-active' : ''}
+                        onClick={() => setStaffImageIndex(index)}
+                        aria-label={tr(`Photo ${index + 1}`, `Photo ${index + 1}`)}
+                        key={src}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <section className="home-contact-card">
+              <div className="home-contact-icon"><span className="material-symbols-outlined">support_agent</span></div>
+              <div className="home-contact-copy">
+                <span>{tr('Besoin d’une information ?', 'Need information?')}</span>
+                <h3>{tr('Contactez la Task Force Présidentielle', 'Contact the Presidential Task Force')}</h3>
+                <p>{tr('Notre équipe est disponible pour recevoir vos questions et vos préoccupations.', 'Our team is available to receive your questions and concerns.')}</p>
+              </div>
+              <form className="home-contact-form" onSubmit={sendContactMessage}>
+                <input aria-label={tr('Nom complet', 'Full name')} placeholder={tr('Nom complet', 'Full name')} value={contactForm.name} onChange={(e) => setContactForm((form) => ({ ...form, name: e.target.value }))} required />
+                <input aria-label={tr('Adresse e-mail', 'Email address')} type="email" placeholder={tr('Adresse e-mail', 'Email address')} value={contactForm.email} onChange={(e) => setContactForm((form) => ({ ...form, email: e.target.value }))} required />
+                <input className="home-contact-form-wide" aria-label={tr('Objet', 'Subject')} placeholder={tr('Objet de votre message', 'Message subject')} value={contactForm.subject} onChange={(e) => setContactForm((form) => ({ ...form, subject: e.target.value }))} required />
+                <textarea className="home-contact-form-wide" aria-label={tr('Votre message', 'Your message')} placeholder={tr('Écrivez votre message...', 'Write your message...')} value={contactForm.message} onChange={(e) => setContactForm((form) => ({ ...form, message: e.target.value }))} required />
+                <button type="submit" className="btn btn-gold home-contact-action" disabled={contactStatus.sending}>
+                  {contactStatus.sending ? tr('Envoi...', 'Sending...') : tr('Envoyer le message', 'Send message')}
+                  <span className="material-symbols-outlined">send</span>
+                </button>
+                {contactStatus.message && <p className="home-contact-feedback is-success">{contactStatus.message}</p>}
+                {contactStatus.error && <p className="home-contact-feedback is-error">{contactStatus.error}</p>}
+              </form>
+            </section>
+
+            <section className="latest-newsletter-card">
+              <div className="latest-newsletter-icon"><span className="material-symbols-outlined">forward_to_inbox</span></div>
+              <div className="latest-newsletter-copy">
+                <span>{tr('Dernière newsletter', 'Latest newsletter')}</span>
+                {latestNewsletter ? (
+                  <>
+                    <h3>{latestNewsletter.title}</h3>
+                    {latestNewsletter.excerpt && <p>{latestNewsletter.excerpt}</p>}
+                  </>
+                ) : (
+                  <h3>{tr('Aucune newsletter publiée pour le moment.', 'No newsletter has been published yet.')}</h3>
                 )}
               </div>
-            </div>
+              <a href={latestNewsletter ? `/publications/${latestNewsletter.slug}` : '/newsletter'} className="latest-newsletter-action">
+                {tr(latestNewsletter ? 'Lire le message' : 'Voir les newsletters', latestNewsletter ? 'Read message' : 'View newsletters')}
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </a>
+            </section>
           </div>
 
-          <aside className="bento-side">
-            <div className="directives-card">
-              <h3><span className="material-symbols-outlined">policy</span>{tr('Directives officielles', 'Official directives')}</h3>
-              <ul>
-                <li>
-                  <span className="material-symbols-outlined pdf-icon">picture_as_pdf</span>
-                  <div>
-                    <p className="li-title">Circulaire N°004/2023</p>
-                    <p className="li-sub">Procédures de passation de marchés</p>
-                  </div>
-                </li>
-                <li>
-                  <span className="material-symbols-outlined pdf-icon">picture_as_pdf</span>
-                  <div>
-                    <p className="li-title">Arrêté Ministériel 45B</p>
-                    <p className="li-sub">Normes de construction publique</p>
-                  </div>
-                </li>
-                <li>
-                  <span className="material-symbols-outlined pdf-icon">picture_as_pdf</span>
-                  <div>
-                    <p className="li-title">Rapport Annuel 2022</p>
-                    <p className="li-sub">Bilan des réalisations</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <div className="transparency-card">
-              <span className="material-symbols-outlined bg-icon">account_balance</span>
-              <h3>{tr('Transparence totale', 'Full transparency')}</h3>
-              <p>{tr('Accédez au portail de données ouvertes pour suivre l’avancement des projets en temps réel.', 'Use the open data portal to monitor project progress in real time.')}</p>
-              <button className="btn" style={{ background: 'var(--white)', color: 'var(--primary)', width: '100%' }}>
-                {tr('Portail Open Data', 'Open Data portal')}
-              </button>
-            </div>
-          </aside>
         </div>
       </div>
     </>
   );
 }
-
-const placeholderBriefs = [
-  { id: 'b1', title: 'Audit des Fonds Alloués : Rapport T3 Disponible', excerpt: 'Consultez le rapport détaillé de l’audit trimestriel sur l’utilisation des fonds publics pour les projets d’énergie.' },
-  { id: 'b2', title: 'Nomination de nouveaux coordonnateurs régionaux', excerpt: 'Le Président a signé l’ordonnance nommant de nouveaux responsables pour superviser l’exécution des travaux en province.' },
-];

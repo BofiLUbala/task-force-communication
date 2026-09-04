@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { EditorContent, ReactNodeViewRenderer, useEditor } from '@tiptap/react';
+import { mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -19,9 +20,28 @@ const ResizableImage = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: { default: 100 },
-      align: { default: 'left' },
+      width: {
+        default: 100,
+        parseHTML: (element) => Number(element.getAttribute('data-width') || element.getAttribute('width')) || 100,
+      },
+      align: {
+        default: 'left',
+        parseHTML: (element) => element.getAttribute('data-align') || element.getAttribute('align') || 'left',
+      },
     };
+  },
+  renderHTML({ HTMLAttributes }) {
+    const { width = 100, align = 'left', style, ...attributes } = HTMLAttributes;
+    const margins = {
+      left: 'margin-left:0;margin-right:auto',
+      center: 'margin-left:auto;margin-right:auto',
+      right: 'margin-left:auto;margin-right:0',
+    }[align] || 'margin-left:0;margin-right:auto';
+    return ['img', mergeAttributes(this.options.HTMLAttributes, attributes, {
+      'data-width': width,
+      'data-align': align,
+      style: `display:block;width:${width}%;max-width:100%;height:auto;${margins};${style || ''}`,
+    })];
   },
   addNodeView() {
     return ReactNodeViewRenderer(EditorImageNodeView);
@@ -38,6 +58,8 @@ export default function RichTextEditor({ id, value, onChange, placeholder }) {
     extensions: [
       StarterKit.configure({
         link: { openOnClick: false, autolink: true },
+        bulletList: { keepMarks: true, keepAttributes: true },
+        orderedList: { keepMarks: true, keepAttributes: true },
       }),
       TextStyle,
       Color,

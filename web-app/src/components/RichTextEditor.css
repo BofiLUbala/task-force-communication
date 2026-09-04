@@ -64,14 +64,19 @@
 .rte-content p:last-child { margin-bottom: 0; }
 .rte-content h2 { font-size: 1.25rem; color: var(--navy); margin: 0.6em 0 0.4em; }
 .rte-content h3 { font-size: 1.05rem; color: var(--navy); margin: 0.6em 0 0.4em; }
-.rte-content ul, .rte-content ol { margin: 0 0 0.8em; padding-left: 1.4em; }
+.rte-content ul, .rte-content ol { margin: 0 0 0.8em; padding-left: 1.7em; }
+.rte-content ul { list-style-type: disc; }
+.rte-content ol { list-style-type: decimal; }
+.rte-content ul ul { list-style-type: circle; }
+.rte-content ol ol { list-style-type: lower-alpha; }
 .rte-content li { margin: 0.2em 0; }
+.rte-content li > p { margin: 0; }
 .rte-content li::marker { color: var(--gold); font-weight: 700; }
 .rte-content ol { counter-reset: rte-counter; }
 .rte-content ol > li::marker { color: var(--navy); }
 .rte-content blockquote { margin: 0 0 0.8em; padding-left: 14px; border-left: 3px solid var(--gold); color: var(--text-muted); }
 .rte-content a { color: var(--primary); text-decoration: underline; }
-.rte-content img { max-width: 100%; border-radius: 6px; margin: 8px 0; }
+.rte-content img { display: block; max-width: 100%; height: auto; border-radius: 6px; margin-top: 8px; margin-bottom: 8px; }
 .rte-content mark { padding: 0 2px; border-radius: 2px; }
 
 .rte-image-wrap {
@@ -133,4 +138,10 @@
 .rte-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left; height: 0; color: var(--outline); pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  .rte-toolbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .rte-group, .rte-divider { flex-shrink: 0; }
+  .rte-content { min-height: 220px; padding: 14px; }
 }

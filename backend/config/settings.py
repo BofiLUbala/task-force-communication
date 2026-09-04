@@ -143,6 +143,7 @@ EMAIL_BACKEND = config(
     ),
 )
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('SMTP_FROM', default=EMAIL_HOST_USER))
+CONTACT_EMAIL = config('CONTACT_EMAIL', default='contact@taskforce-presidentielle.cd')
 EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=15, cast=int)
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 

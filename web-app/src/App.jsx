@@ -7,6 +7,11 @@ import Actualites from './pages/public/Actualites';
 import Galerie from './pages/public/Galerie';
 import Videos from './pages/public/Videos';
 import Contact from './pages/public/Contact';
+import About from './pages/public/About';
+import Newsletter from './pages/public/Newsletter';
+import NewsletterUnsubscribe from './pages/public/NewsletterUnsubscribe';
+import Communiques from './pages/public/Communiques';
+import PostDetail from './pages/public/PostDetail';
 import Login from './pages/internal/Login';
 import { ForgotPassword, Register, ResetPassword, VerifyEmail } from './pages/internal/AuthPages';
 import AgentDashboard from './pages/internal/AgentDashboard';
@@ -24,6 +29,11 @@ export default function App() {
         <Route path="/galerie" element={<Galerie />} />
         <Route path="/videos" element={<Videos />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/a-propos" element={<About />} />
+        <Route path="/newsletter" element={<Newsletter />} />
+        <Route path="/newsletter/desabonnement/:token" element={<NewsletterUnsubscribe />} />
+        <Route path="/communiques" element={<Communiques />} />
+        <Route path="/publications/:slug" element={<PostDetail />} />
       </Route>
 
       <Route path="/connexion" element={<Login />} />
@@ -42,9 +52,15 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route path="/espace/publications/actualite" element={<PublicationDashboard type="actualite" />} />
+        <Route path="/espace/publications/actualite/:slug" element={<PublicationDashboard type="actualite" />} />
         <Route path="/espace/publications/image" element={<PublicationDashboard type="image" />} />
+        <Route path="/espace/publications/image/:slug" element={<PublicationDashboard type="image" />} />
         <Route path="/espace/publications/video" element={<PublicationDashboard type="video" />} />
+        <Route path="/espace/publications/video/:slug" element={<PublicationDashboard type="video" />} />
         <Route path="/espace/publications/communique" element={<PublicationDashboard type="communique" />} />
+        <Route path="/espace/publications/communique/:slug" element={<PublicationDashboard type="communique" />} />
+        <Route path="/espace/publications/newsletter" element={<PublicationDashboard type="newsletter" />} />
+        <Route path="/espace/publications/newsletter/:slug" element={<PublicationDashboard type="newsletter" />} />
         <Route path="/espace/reseaux-sociaux" element={<SocialLinksDashboard />} />
       </Route>
     </Routes>

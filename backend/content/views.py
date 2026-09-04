@@ -13,10 +13,14 @@ from rest_framework.views import APIView
 
 from notifications.services import notify_hierarchy_new_report, notify_agent_report_reviewed
 
-from .models import EditorImage, PublicPost, Report, ReportMedia, SocialAccount, SocialMediaLink
-from .permissions import IsHierarchy, IsOwnerAgent
+from .models import EditorImage, NewsletterDelivery, NewsletterSubscriber, PublicPost, Report, ReportMedia, SocialAccount, SocialMediaLink
+from .newsletter import send_test, send_to_subscribers
+from .permissions import IsHierarchy, IsOwnerAgent, IsOwnerOrHierarchy
 from .serializers import (
+    ContactMessageSerializer,
     EditorImageSerializer,
+    NewsletterDeliverySerializer,
+    NewsletterSubscriberSerializer,
     PublicMediaSerializer,
     PublicPostSerializer,
     ReportMediaSerializer,
@@ -94,18 +98,30 @@ class PublicPostViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return (permissions.AllowAny(),)
-        if self.action in ('create', 'upload_media'):
+        if self.action in (
+            'create', 'upload_media', 'push_social', 'send_newsletter',
+            'test_newsletter', 'newsletter_stats',
+        ):
             return (permissions.IsAuthenticated(),)
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return (permissions.IsAuthenticated(), IsOwnerOrHierarchy())
         return (permissions.IsAuthenticated(), IsHierarchy())
 
     def get_queryset(self):
+        from django.db.models import Q
+
         qs = PublicPost.objects.all().prefetch_related('gallery', 'social_attempts__account')
-        if self.action in ('list', 'retrieve') and not (
-            self.request.user.is_authenticated and self.request.user.is_hierarchy
-        ):
+        user = self.request.user
+        # Public feeds must never leak drafts, even when their author is logged in.
+        if self.action == 'list':
             qs = qs.filter(is_published=True)
+        elif self.action == 'retrieve' and not (user.is_authenticated and user.is_hierarchy):
+            qs = qs.filter(Q(is_published=True) | Q(published_by_id=user.id)) if user.is_authenticated else qs.filter(is_published=True)
         category = self.request.query_params.get('category')
-        return qs.filter(category=category) if category else qs
+        if category:
+            qs = qs.filter(category=category)
+        exclude_category = self.request.query_params.get('exclude_category')
+        return qs.exclude(category=exclude_category) if exclude_category else qs
 
     def perform_create(self, serializer):
         title = serializer.validated_data.get('title', '')
@@ -148,6 +164,7 @@ class PublicPostViewSet(viewsets.ModelViewSet):
             'COMMUNIQUE': 'actualites',
             'ACTUALITE': 'actualites',
             'ACTIVITE': 'activites',
+            'NEWSLETTER': 'newsletter',
         }
         post_url = f'{settings.FRONTEND_URL}/{category_paths.get(post.category, "actualites")}'
         publish_to_all_accounts(post, post_url)
@@ -169,10 +186,114 @@ class PublicPostViewSet(viewsets.ModelViewSet):
         if not post.is_published:
             return Response({'detail': 'Ce post n’est pas publié.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        category_paths = {'COMMUNIQUE': 'actualites', 'ACTUALITE': 'actualites', 'ACTIVITE': 'activites'}
+        category_paths = {'COMMUNIQUE': 'actualites', 'ACTUALITE': 'actualites', 'ACTIVITE': 'activites', 'NEWSLETTER': 'newsletter'}
         post_url = f'{settings.FRONTEND_URL}/{category_paths.get(post.category, "actualites")}'
         attempts = publish_to_all_accounts(post, post_url)
         return Response(SocialPostAttemptSerializer(attempts, many=True).data)
+
+    @action(detail=True, methods=['post'], url_path='send-newsletter', permission_classes=(permissions.IsAuthenticated,))
+    def send_newsletter(self, request, slug=None):
+        post = self.get_object()
+        if post.category != PublicPost.Category.NEWSLETTER:
+            return Response({'detail': 'Cette publication n’est pas une newsletter.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.is_hierarchy and post.published_by_id != request.user.id:
+            return Response({'detail': 'Vous ne pouvez envoyer que vos propres newsletters.'}, status=status.HTTP_403_FORBIDDEN)
+        if post.newsletter_sent_at:
+            return Response({'detail': 'Cette newsletter a déjà été envoyée.'}, status=status.HTTP_400_BAD_REQUEST)
+        sent, failed = send_to_subscribers(post)
+        post.is_published = True
+        post.published_at = post.published_at or timezone.now()
+        post.newsletter_sent_at = timezone.now()
+        post.newsletter_recipient_count = sent
+        post.save(update_fields=('is_published', 'published_at', 'newsletter_sent_at', 'newsletter_recipient_count'))
+        return Response({'sent': sent, 'failed': failed, 'post': PublicPostSerializer(post).data})
+
+    @action(detail=True, methods=['post'], url_path='test-newsletter', permission_classes=(permissions.IsAuthenticated,))
+    def test_newsletter(self, request, slug=None):
+        post = self.get_object()
+        if post.category != PublicPost.Category.NEWSLETTER:
+            return Response({'detail': 'Cette publication n’est pas une newsletter.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not request.user.is_hierarchy and post.published_by_id != request.user.id:
+            return Response({'detail': 'Action non autorisée.'}, status=status.HTTP_403_FORBIDDEN)
+        email = request.data.get('email', '').strip()
+        if not email:
+            return Response({'detail': 'Une adresse e-mail de test est requise.'}, status=status.HTTP_400_BAD_REQUEST)
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        try:
+            validate_email(email)
+            send_test(post, email)
+        except ValidationError:
+            return Response({'detail': 'Adresse e-mail invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            return Response({'detail': f'Échec de l’envoi test : {exc}'}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({'detail': 'E-mail de test envoyé.'})
+
+    @action(detail=True, methods=['get'], url_path='newsletter-stats', permission_classes=(permissions.IsAuthenticated,))
+    def newsletter_stats(self, request, slug=None):
+        post = self.get_object()
+        if not request.user.is_hierarchy and post.published_by_id != request.user.id:
+            return Response({'detail': 'Action non autorisée.'}, status=status.HTTP_403_FORBIDDEN)
+        deliveries = post.newsletter_deliveries.select_related('subscriber')
+        return Response({
+            'recipient_count': post.newsletter_recipient_count,
+            'sent': deliveries.filter(status=NewsletterDelivery.Status.SENT).count(),
+            'failed': deliveries.filter(status=NewsletterDelivery.Status.FAILED).count(),
+            'deliveries': NewsletterDeliverySerializer(deliveries, many=True).data,
+        })
+
+
+class ContactMessageView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        from django.core.mail import EmailMultiAlternatives
+
+        serializer = ContactMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        email = EmailMultiAlternatives(
+            subject=f'[Contact site] {data["subject"]}',
+            body=f'Nom : {data["name"]}\nE-mail : {data["email"]}\n\n{data["message"]}',
+            from_email=settings.DEFAULT_FROM_EMAIL or settings.CONTACT_EMAIL,
+            to=[settings.CONTACT_EMAIL],
+            reply_to=[data['email']],
+        )
+        try:
+            email.send(fail_silently=False)
+        except Exception:
+            return Response({'detail': 'Le message n’a pas pu être envoyé. Réessayez plus tard.'}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response({'detail': 'Votre message a bien été envoyé.'}, status=status.HTTP_201_CREATED)
+
+
+class NewsletterSubscribeView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        serializer = NewsletterSubscriberSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        subscriber, created = NewsletterSubscriber.objects.get_or_create(
+            email=serializer.validated_data['email'].lower(),
+            defaults={'name': serializer.validated_data.get('name', '')},
+        )
+        if not created:
+            subscriber.name = serializer.validated_data.get('name', subscriber.name)
+            subscriber.is_active = True
+            subscriber.unsubscribed_at = None
+            subscriber.save(update_fields=('name', 'is_active', 'unsubscribed_at'))
+        return Response({'detail': 'Inscription confirmée.'}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class NewsletterUnsubscribeView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, token):
+        from django.shortcuts import get_object_or_404
+        subscriber = get_object_or_404(NewsletterSubscriber, unsubscribe_token=token)
+        subscriber.is_active = False
+        subscriber.unsubscribed_at = timezone.now()
+        subscriber.save(update_fields=('is_active', 'unsubscribed_at'))
+        return Response({'detail': 'Désabonnement confirmé.'})
 
 
 class EditorImageUploadView(APIView):
@@ -211,7 +332,7 @@ class SocialMediaLinkViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(added_by=self.request.user)
+        serializer.save(added_by=self.request.user, is_active=True)
 
 
 class SocialAccountViewSet(viewsets.ReadOnlyModelViewSet):

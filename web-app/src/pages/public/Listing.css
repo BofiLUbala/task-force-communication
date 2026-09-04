@@ -24,6 +24,16 @@
 }
 .page-back-link:hover { color: var(--white); }
 .page-back-link .material-symbols-outlined { font-size: 1.1rem; }
+.newsletter-page-header { background: linear-gradient(120deg, rgba(0,47,106,.98), rgba(0,77,153,.86)); }
+.newsletter-listing { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 64px; display: grid; gap: 18px; }
+.newsletter-public-card { padding: clamp(22px, 4vw, 34px); border: 1px solid var(--outline-variant); border-left: 5px solid var(--gold); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+.newsletter-public-meta { display: flex; align-items: center; gap: 7px; color: var(--outline); font-size: .74rem; font-weight: 700; text-transform: uppercase; }
+.newsletter-public-meta .material-symbols-outlined { color: var(--gold); font-size: 19px; }
+.newsletter-public-card h2 { margin: 12px 0 8px; color: var(--primary); font-size: clamp(1.2rem, 2.5vw, 1.65rem); }
+.newsletter-public-card > p { margin: 0 0 18px; color: var(--on-surface-variant); line-height: 1.6; }
+.newsletter-public-card > a { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-size: .86rem; font-weight: 800; }
+.newsletter-public-card > a .material-symbols-outlined { font-size: 18px; }
+.newsletter-list-empty { padding: 30px; text-align: center; color: var(--on-surface-variant); }
 
 .listing-layout {
   max-width: 1440px;
@@ -35,6 +45,29 @@
 }
 
 .news-list { display: flex; flex-direction: column; gap: 20px; }
+.communiques-page-header { padding-block: 34px 40px; }
+.communiques-page-header .page-back-link { margin-bottom: 24px; }
+.communiques-page-header h1 { margin: 5px 0 8px; }
+.communiques-page-header p { margin: 0; }
+.communiques-eyebrow { color: var(--gold); font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.communiques-section { width: min(100% - 40px, 1080px); margin: 44px auto 70px; }
+.communiques-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--outline-variant); margin-bottom: 12px; }
+.communiques-list-heading > div { display: flex; align-items: center; gap: 12px; }
+.communiques-list-heading > div > .material-symbols-outlined { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--primary); background: var(--gold); }
+.communiques-list-heading h2 { margin: 0; color: var(--on-surface); font-size: 1.2rem; }
+.communiques-list-heading p { margin: 3px 0 0; color: var(--on-surface-variant); font-size: .82rem; }
+.communiques-count { padding: 7px 11px; border-radius: 999px; color: var(--primary); background: var(--surface-container-high); font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.communique-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 44px; gap: 22px; align-items: center; padding: 22px 20px; color: inherit; border-bottom: 1px solid var(--outline-variant); background: transparent; transition: background .18s ease, transform .18s ease; }
+.communique-row:hover { background: var(--surface); transform: translateX(4px); }
+.communique-date { display: flex; flex-direction: column; padding-right: 20px; border-right: 1px solid var(--outline-variant); color: var(--on-surface-variant); text-transform: uppercase; }
+.communique-date strong { color: var(--primary); font-size: 1.55rem; line-height: 1; }
+.communique-date span { margin-top: 5px; font-size: .68rem; font-weight: 700; }
+.communique-type { color: var(--primary); font-size: .67rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.communique-row h3 { margin: 5px 0 0; color: var(--on-surface); font-size: 1.02rem; line-height: 1.4; }
+.communique-row p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 6px 0 0; color: var(--on-surface-variant); font-size: .82rem; line-height: 1.5; }
+.communique-open { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--primary); background: var(--surface-container-high); transition: color .18s ease, background .18s ease; }
+.communique-row:hover .communique-open { color: var(--primary); background: var(--gold); }
+@media (max-width: 640px) { .communiques-section { width: min(100% - 28px, 1080px); margin-top: 28px; } .communiques-list-heading { align-items: flex-start; } .communiques-list-heading p, .communiques-count { display: none; } .communique-row { grid-template-columns: 62px minmax(0, 1fr); gap: 14px; padding: 18px 8px; } .communique-date { padding-right: 10px; } .communique-date strong { font-size: 1.3rem; } .communique-open { display: none; } }
 
 .news-item {
   display: grid;
@@ -60,6 +93,35 @@
 .news-date .material-symbols-outlined { font-size: 16px; }
 .news-title { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 1.15rem; margin: 8px 0; color: var(--on-surface); line-height: 1.35; }
 .news-excerpt { font-size: 0.9rem; color: var(--on-surface-variant); margin: 0; line-height: 1.5; }
+
+.news-item-title-only {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.8);
+  border-left: 4px solid var(--primary);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  color: var(--on-surface);
+}
+.news-item-title-only:hover { box-shadow: 0 8px 24px rgba(0,47,106,0.15); transform: translateX(2px); }
+.news-item-title-only .news-date {
+  flex-shrink: 0; min-width: 90px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+}
+.news-item-title-only h3 {
+  flex: 1; margin: 0;
+  font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 1.05rem;
+  line-height: 1.4;
+}
+.news-item-arrow { color: var(--outline); flex-shrink: 0; }
+.news-item-title-only:hover .news-item-arrow { color: var(--primary); }
+
+:root[data-theme='dark'] .news-item-title-only { background: var(--surface-container-lowest); color: var(--on-surface); border-color: var(--outline-variant); }
 
 .sidebar { display: flex; flex-direction: column; gap: 20px; }
 .sidebar-box { background: var(--surface); border: 1px solid rgba(195,198,211,0.2); border-radius: 0.75rem; padding: 20px; box-shadow: var(--shadow); }
@@ -184,3 +246,20 @@
   .page-header { padding: 48px 20px; }
   .contact-page { padding: 40px 16px; }
 }
+
+.newsletter-subscribe-section { max-width: 1120px; margin: 36px auto 0; padding: 30px; border-radius: 18px; background: var(--primary); color: white; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
+.newsletter-subscribe-copy span { color: var(--gold); font-weight: 800; font-size: .76rem; letter-spacing: .08em; }
+.newsletter-subscribe-copy h2 { margin: 8px 0 10px; font-size: clamp(1.4rem, 3vw, 2rem); }
+.newsletter-subscribe-copy p { margin: 0; color: rgba(255,255,255,.78); line-height: 1.55; }
+.newsletter-subscribe-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.newsletter-subscribe-form label { font-size: .78rem; font-weight: 700; }
+.newsletter-subscribe-form input { min-width: 0; padding: 12px; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; }
+.newsletter-subscribe-form .btn, .newsletter-subscribe-form small, .newsletter-form-success, .newsletter-form-error { grid-column: 1 / -1; }
+.newsletter-subscribe-form small { color: rgba(255,255,255,.68); }
+.newsletter-form-success { color: #baf3c8; margin: 2px 0; }
+.newsletter-form-error { color: #ffb9b9; margin: 2px 0; }
+.unsubscribe-page { max-width: 620px; margin: 80px auto; padding: 40px; text-align: center; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+.unsubscribe-page > .material-symbols-outlined { font-size: 48px; color: var(--primary); }
+.unsubscribe-page .btn { margin: 18px auto; display: block; }
+.unsubscribe-page > a { color: var(--primary); font-weight: 700; }
+@media (max-width: 760px) { .newsletter-subscribe-section { margin: 20px 16px 0; padding: 22px; grid-template-columns: 1fr; gap: 22px; } .newsletter-subscribe-form { grid-template-columns: 1fr; } .newsletter-subscribe-form > * { grid-column: 1; } .unsubscribe-page { margin: 30px 16px; padding: 28px 20px; } }

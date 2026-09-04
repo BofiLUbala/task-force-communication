@@ -11,6 +11,7 @@ const NAV_ICONS = [
   [/\/publications\/image$/, 'image'],
   [/\/publications\/video$/, 'movie'],
   [/\/publications\/communique$/, 'picture_as_pdf'],
+  [/\/publications\/newsletter$/, 'forward_to_inbox'],
   [/\/reseaux-sociaux$/, 'share'],
   [/\/statistiques$/, 'bar_chart'],
 ];

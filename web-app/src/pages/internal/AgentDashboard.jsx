@@ -15,6 +15,7 @@ export default function AgentDashboard() {
     { to: '/espace/publications/image', label: tr('Publier une image', 'Publish an image') },
     { to: '/espace/publications/video', label: tr('Publier une vidéo', 'Publish a video') },
     { to: '/espace/publications/communique', label: tr('Publier un communiqué', 'Publish a release') },
+    { to: '/espace/publications/newsletter', label: tr('Publier une newsletter', 'Publish a newsletter') },
     { to: '/espace/reseaux-sociaux', label: tr('Réseaux sociaux', 'Social media') },
   ];
   const publishingFeatures = [
@@ -22,6 +23,7 @@ export default function AgentDashboard() {
     { to: '/espace/publications/image', icon: 'image', title: tr('Publier une image', 'Publish an image'), text: tr('Ajouter une photo dans la galerie publique.', 'Add a photo to the public gallery.') },
     { to: '/espace/publications/video', icon: 'movie', title: tr('Publier une vidéo', 'Publish a video'), text: tr('Mettre une nouvelle vidéo à la disposition du public.', 'Make a new video available to the public.') },
     { to: '/espace/publications/communique', icon: 'picture_as_pdf', title: tr('Publier un communiqué', 'Publish a release'), text: tr('Partager un communiqué officiel avec son PDF.', 'Share an official release and its PDF.') },
+    { to: '/espace/publications/newsletter', icon: 'forward_to_inbox', title: tr('Publier une newsletter', 'Publish a newsletter'), text: tr('Publier un nouveau message dans l’espace Newsletter.', 'Publish a new message in the Newsletter section.') },
     { to: '/espace/reseaux-sociaux', icon: 'share', title: tr('Réseaux sociaux', 'Social media'), text: tr('Ajouter un lien vers un réseau social affiché sur l’accueil.', 'Add a social network link shown on the homepage.') },
   ];
   const [reports, setReports] = useState([]);

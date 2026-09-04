@@ -84,6 +84,7 @@ class PublicPost(models.Model):
         COMMUNIQUE = 'COMMUNIQUE', 'Communiqué'
         ACTUALITE = 'ACTUALITE', 'Actualité'
         ACTIVITE = 'ACTIVITE', 'Activité'
+        NEWSLETTER = 'NEWSLETTER', 'Newsletter'
 
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
@@ -92,6 +93,11 @@ class PublicPost(models.Model):
     body = models.TextField()
     cover_image = models.ImageField(upload_to='covers/', null=True, blank=True)
     attachment = models.FileField(upload_to='communiques/', null=True, blank=True)
+    newsletter_subject = models.CharField(max_length=255, blank=True)
+    newsletter_preview_text = models.CharField(max_length=255, blank=True)
+    newsletter_sender_name = models.CharField(max_length=150, blank=True)
+    newsletter_sent_at = models.DateTimeField(null=True, blank=True)
+    newsletter_recipient_count = models.PositiveIntegerField(default=0)
 
     source_report = models.ForeignKey(
         Report, on_delete=models.SET_NULL, null=True, blank=True, related_name='publications',
@@ -189,7 +195,40 @@ class PublicMedia(models.Model):
     post = models.ForeignKey(PublicPost, on_delete=models.CASCADE, related_name='gallery')
     file = models.FileField(upload_to=public_upload_path)
     media_type = models.CharField(max_length=20, choices=MediaType.choices)
+    title = models.CharField(max_length=255, blank=True)
     caption = models.CharField(max_length=255, blank=True)
+    social_links = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f'{self.media_type} - {self.post.title}'
+
+
+class NewsletterSubscriber(models.Model):
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=150, blank=True)
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    is_active = models.BooleanField(default=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ('-subscribed_at',)
+
+    def __str__(self):
+        return self.email
+
+
+class NewsletterDelivery(models.Model):
+    class Status(models.TextChoices):
+        SENT = 'SENT', 'Envoyé'
+        FAILED = 'FAILED', 'Échec'
+
+    post = models.ForeignKey(PublicPost, on_delete=models.CASCADE, related_name='newsletter_deliveries')
+    subscriber = models.ForeignKey(NewsletterSubscriber, on_delete=models.CASCADE, related_name='deliveries')
+    status = models.CharField(max_length=10, choices=Status.choices)
+    error = models.CharField(max_length=500, blank=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-sent_at',)
+        constraints = [models.UniqueConstraint(fields=('post', 'subscriber'), name='unique_newsletter_delivery')]
