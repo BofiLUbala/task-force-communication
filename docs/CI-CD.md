@@ -49,7 +49,8 @@ règle `/* /index.html 200` (boucle de redirection détectée au déploiement).
 | `GITHUB_TOKEN` | fourni automatiquement | pousse l'image sur `ghcr.io` |
 | `DEPLOY_HOOK_URL` | optionnel | URL de redéploiement de l'hébergeur (Render : *Deploy hook*). Absent → l'image est publiée et le redéploiement reste manuel. |
 
-L'image publiée est `ghcr.io/<owner>/<repo>/backend:latest`, plus un tag par
+L'image publiée est `ghcr.io/bofilubala/task-force-communication/backend:latest`
+(en minuscules : GHCR refuse les majuscules du nom de compte), plus un tag par
 commit pour revenir en arrière. Elle convient à App Runner, ECS, Render, Koyeb
 ou un VPS : l'hébergeur peut changer sans toucher au workflow.
 
