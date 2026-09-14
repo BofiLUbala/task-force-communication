@@ -25,25 +25,44 @@ class PublicSignupSlotTests(APITestCase):
             'password': STRONG_PASSWORD,
         })
 
-    def test_signup_fills_super_admin_then_hierarchy_then_closes(self):
+    def test_signup_fills_one_super_admin_then_two_hierarchies_then_closes(self):
         self.assertEqual(self.client.get('/api/auth/registration-status/').data['role'], 'SUPER_ADMIN')
 
         first = self.register('boss@example.com')
         self.assertEqual(first.status_code, 201)
         self.assertEqual(User.objects.get(email='boss@example.com').role, User.Role.SUPER_ADMIN)
 
+        # The super admin post holds a single seat; the next one is a lead.
         self.assertEqual(self.client.get('/api/auth/registration-status/').data['role'], 'HIERARCHY')
 
         second = self.register('chief@example.com')
         self.assertEqual(second.status_code, 201)
         self.assertEqual(User.objects.get(email='chief@example.com').role, User.Role.HIERARCHY)
 
+        # Two operational leads, so the field is never left unstaffed.
+        self.assertEqual(self.client.get('/api/auth/registration-status/').data['role'], 'HIERARCHY')
+
+        third = self.register('deputy@example.com')
+        self.assertEqual(third.status_code, 201)
+        self.assertEqual(User.objects.get(email='deputy@example.com').role, User.Role.HIERARCHY)
+
         status_now = self.client.get('/api/auth/registration-status/').data
         self.assertFalse(status_now['open'])
 
-        third = self.register('someone@example.com')
-        self.assertEqual(third.status_code, 403)
+        fourth = self.register('someone@example.com')
+        self.assertEqual(fourth.status_code, 403)
         self.assertFalse(User.objects.filter(email='someone@example.com').exists())
+
+    def test_the_platform_never_holds_more_than_three_staff_accounts(self):
+        self.register('boss@example.com')
+        self.register('chief@example.com')
+        self.register('deputy@example.com')
+        self.register('intruder@example.com')
+
+        staff = User.objects.filter(role__in=User.STAFF_ROLES)
+        self.assertEqual(staff.count(), 3)
+        self.assertEqual(staff.filter(role=User.Role.SUPER_ADMIN).count(), 1)
+        self.assertEqual(staff.filter(role=User.Role.HIERARCHY).count(), 2)
 
     def test_self_registered_account_stays_pending_until_email_confirmed(self):
         self.register('boss@example.com')
@@ -104,15 +123,50 @@ class InvitationTests(APITestCase):
         replay = self.client.post('/api/auth/invitations/accept/', {'token': token, 'password': STRONG_PASSWORD})
         self.assertEqual(replay.status_code, 400)
 
-    def test_super_admin_cannot_invite_a_second_hierarchy(self):
+    def test_super_admin_may_invite_a_second_hierarchy_but_not_a_third(self):
         self.client.force_authenticate(self.super_admin)
-        response = self.client.post('/api/auth/invitations/', {'email': 'other-chief@example.com'})
-        self.assertEqual(response.status_code, 400)
 
+        second = self.client.post('/api/auth/invitations/', {'email': 'deputy@example.com'})
+        self.assertEqual(second.status_code, 201, second.data)
+        self.assertEqual(User.objects.get(email='deputy@example.com').role, User.Role.HIERARCHY)
+
+        third = self.client.post('/api/auth/invitations/', {'email': 'other-chief@example.com'})
+        self.assertEqual(third.status_code, 400)
+        self.assertEqual(third.data['code'], 'ROLE_FULL')
+        self.assertFalse(User.objects.filter(email='other-chief@example.com').exists())
+
+        # Freeing a seat reopens exactly one place.
         self.hierarchy.delete()
         allowed = self.client.post('/api/auth/invitations/', {'email': 'other-chief@example.com'})
         self.assertEqual(allowed.status_code, 201)
-        self.assertEqual(User.objects.get(email='other-chief@example.com').role, User.Role.HIERARCHY)
+        self.assertEqual(User.objects.filter(role=User.Role.HIERARCHY).count(), 2)
+
+    def test_a_pending_invitation_holds_its_seat(self):
+        """Two people must never be invited onto the same post and find out
+        about the clash only when the second one activates."""
+        self.client.force_authenticate(self.super_admin)
+        self.client.post('/api/auth/invitations/', {'email': 'deputy@example.com'})
+
+        invited = User.objects.get(email='deputy@example.com')
+        self.assertEqual(invited.status, User.AccountStatus.INVITED)
+        self.assertFalse(invited.is_active)
+
+        refused = self.client.post('/api/auth/invitations/', {'email': 'third@example.com'})
+        self.assertEqual(refused.status_code, 400)
+        self.assertEqual(refused.data['code'], 'ROLE_FULL')
+
+    def test_the_dashboard_reports_the_remaining_seats(self):
+        self.client.force_authenticate(self.super_admin)
+        stats = self.client.get('/api/auth/users/overview/').data
+        self.assertEqual(stats['post_capacity'], 2)
+        self.assertEqual(stats['post_occupied'], 1)
+        self.assertEqual(stats['post_remaining'], 1)
+        self.assertTrue(stats['post_is_vacant'])
+
+        self.client.post('/api/auth/invitations/', {'email': 'deputy@example.com'})
+        full = self.client.get('/api/auth/users/overview/').data
+        self.assertEqual(full['post_remaining'], 0)
+        self.assertFalse(full['post_is_vacant'])
 
     def test_agents_cannot_invite_anyone(self):
         agent = User.objects.create_user(

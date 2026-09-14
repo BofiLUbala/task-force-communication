@@ -38,6 +38,17 @@ class Command(BaseCommand):
                 holder.role = User.Role.AGENT
                 holder.save(update_fields=('role',))
                 self.stdout.write(self.style.WARNING(f'{holder.email} rétrogradé en agent.'))
+        elif role in User.STAFF_ROLES and user.role != role:
+            # A post with several seats has no single holder to hand over to,
+            # so there is nothing --force could unambiguously replace: the
+            # operator has to say which seat they are freeing.
+            capacity = User.ROLE_CAPACITY[role]
+            occupied = User.objects.filter(role=role).exclude(pk=user.pk).count()
+            if occupied >= capacity:
+                raise CommandError(
+                    f'Le poste « {User.Role(role).label} » est complet '
+                    f'({occupied}/{capacity}). Libérez une place avant d’en attribuer une autre.'
+                )
 
         user.role = role
         user.save(update_fields=('role',))

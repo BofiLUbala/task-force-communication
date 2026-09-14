@@ -14,8 +14,24 @@ class User(AbstractUser):
         ACTIVE = 'ACTIVE', 'Actif'
         REVOKED = 'REVOKED', 'Accès révoqué'
 
-    #: Roles that exist only once in the whole application.
-    SINGLETON_ROLES = (Role.SUPER_ADMIN, Role.HIERARCHY)
+    #: How many accounts each staff post may hold. Everything not listed
+    #: here (the field agents) is unlimited.
+    #:
+    #: One technical owner, and two operational leads so the field is never
+    #: left unstaffed when one of them is unavailable — both invite agents.
+    ROLE_CAPACITY = {
+        Role.SUPER_ADMIN: 1,
+        Role.HIERARCHY: 2,
+    }
+
+    #: Posts with a limited number of seats.
+    STAFF_ROLES = tuple(ROLE_CAPACITY)
+
+    #: Posts that exist exactly once. Kept as its own name because "the single
+    #: super admin" is a different idea from "a capped post".
+    SINGLETON_ROLES = tuple(
+        role for role, seats in ROLE_CAPACITY.items() if seats == 1
+    )
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.AGENT)
     status = models.CharField(

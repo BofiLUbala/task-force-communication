@@ -8,7 +8,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import OneTimeToken
 from .permissions import CanManageAccounts
-from .provisioning import open_registration_role, role_post_is_vacant
+from .provisioning import (
+    capacity_error,
+    open_registration_role,
+    remaining_seats,
+    role_post_is_vacant,
+)
 from .serializers import (
     EmailTokenSerializer,
     ExpoPushTokenSerializer,
@@ -100,7 +105,7 @@ class RegistrationStatusView(APIView):
 
 
 class RegisterView(APIView):
-    """Public signup, restricted to whichever singleton post is still vacant."""
+    """Public signup, restricted to whichever staff post still has a free seat."""
     permission_classes = (permissions.AllowAny,)
 
     @transaction.atomic
@@ -158,14 +163,10 @@ class InvitationView(APIView):
     @transaction.atomic
     def post(self, request):
         role = request.user.manageable_roles[0]
-        if role in User.SINGLETON_ROLES and not role_post_is_vacant(role):
-            return Response(
-                {
-                    'detail': f'Un compte « {User.Role(role).label} » existe déjà. '
-                              'Supprimez-le avant d’en inviter un autre.',
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        full = capacity_error(role)
+        if full:
+            return Response({'detail': full, 'code': 'ROLE_FULL'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         serializer = InvitationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -267,6 +268,11 @@ class ManagedUserViewSet(viewsets.ReadOnlyModelViewSet):
                 for state in User.AccountStatus
             },
             'post_is_vacant': role_post_is_vacant(managed_role),
+            # Seats let the dashboard say "1 place restante" instead of only
+            # disabling the button once the post is already full.
+            'post_capacity': User.ROLE_CAPACITY.get(managed_role),
+            'post_occupied': User.objects.filter(role=managed_role).count(),
+            'post_remaining': remaining_seats(managed_role),
             'platform': {
                 'agents': User.objects.filter(role=User.Role.AGENT).count(),
                 'hierarchy': User.objects.filter(role=User.Role.HIERARCHY).count(),
