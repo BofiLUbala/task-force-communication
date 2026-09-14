@@ -1,0 +1,80 @@
+# App mobile Expo -> builds EAS (APK Android / IPA iOS).
+#
+# Le build tourne sur les serveurs Expo (EAS), pas sur le runner : c'est ce qui
+# permet de produire un IPA iOS sans machine macOS. Le workflow ne fait que
+# declencher le build et afficher le lien de telechargement.
+#
+# Declenchement manuel (Actions > Build mobile > Run workflow) pour choisir la
+# plateforme et le profil, et automatique sur un tag `mobile-v*`.
+#
+# Prerequis, une seule fois :
+#   1. npm i -g eas-cli && eas login && eas init   (dans mobile-app/ : ecrit
+#      extra.eas.projectId dans app.json, a commiter)
+#   2. eas secret:create --name EXPO_PUBLIC_API_URL --value https://api.<domaine>/api
+#   3. Android : eas credentials -> laisser EAS generer le keystore
+#      iOS : compte Apple Developer (99 $/an) puis eas credentials
+#   4. Secret GitHub EXPO_TOKEN (expo.dev > Account settings > Access tokens)
+#
+# Profils (mobile-app/eas.json) :
+#   preview    -> APK Android installable directement + build simulateur iOS
+#   production -> AAB pour le Play Store + IPA pour l'App Store
+
+name: Build mobile
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Plateforme
+        type: choice
+        default: android
+        options: [android, ios, all]
+      profile:
+        description: Profil EAS
+        type: choice
+        default: preview
+        options: [preview, production]
+  push:
+    tags:
+      - 'mobile-v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Verifier la configuration Expo
+        run: npx expo-doctor || true
+
+      # Un tag mobile-v* publie la version de production sur les deux
+      # plateformes ; un declenchement manuel suit les choix du formulaire.
+      - name: Lancer le build EAS
+        run: |
+          PLATFORM="${{ inputs.platform || 'all' }}"
+          PROFILE="${{ inputs.profile || 'production' }}"
+          echo "Build $PROFILE pour $PLATFORM"
+          eas build \
+            --platform "$PLATFORM" \
+            --profile "$PROFILE" \
+            --non-interactive \
+            --wait
+
+      - name: Liens de telechargement
+        run: eas build:list --limit 2 --non-interactive
