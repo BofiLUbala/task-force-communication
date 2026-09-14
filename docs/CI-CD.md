@@ -100,3 +100,33 @@ avec `eas submit --platform android --latest` (idem `ios`).
 - Onglet **Actions** : le job doit être vert.
 - Web : rechargement forcé du site, la modification doit être visible.
 - API : `https://api.<domaine>/healthz/` → `{"status":"ok","database":"ok"}`.
+
+## Héberger l'API (Render)
+
+`render.yaml`, à la racine, décrit la base PostgreSQL et le service Docker.
+Render lit ce fichier et provisionne tout : rien à cliquer service par service.
+
+1. render.com > **New** > **Blueprint** > connecter le dépôt
+   `BofiLUbala/task-force-communication` > **Apply**.
+2. Render demande les valeurs marquées `sync: false` (SMTP, OAuth, stockage
+   objet). Elles peuvent rester vides au premier déploiement : l'API démarre,
+   seules les fonctions concernées restent inactives.
+3. Une fois l'URL connue (`https://taskforce-api.onrender.com`), renseigner
+   `SOCIAL_AUTH_REDIRECT_BASE` avec cette même URL.
+4. Vérifier : `https://taskforce-api.onrender.com/healthz/` doit renvoyer
+   `{"status":"ok","database":"ok"}`.
+5. Créer enfin le secret GitHub `VITE_API_URL` =
+   `https://taskforce-api.onrender.com/api`, puis relancer *Deploy web app*.
+
+Render redéploie l'API à chaque push sur `main`. Le workflow `deploy-backend`
+reste utile : il valide les migrations et publie l'image sur GHCR, ce qui
+permet de changer d'hébergeur sans rien reconstruire.
+
+### Limites du plan gratuit — à connaître avant la mise en service
+
+| Limite | Conséquence |
+|---|---|
+| Base supprimée après **30 jours** | passer en `basic-256mb` (7 $/mois) avant l'ouverture au public |
+| Service **endormi** après 15 min sans trafic | première requête ~50 s ; le plan `starter` (7 $/mois) supprime ce délai |
+| Système de fichiers **éphémère** | sans `AWS_STORAGE_BUCKET_NAME`, chaque image ou vidéo téléversée disparaît au redéploiement. Cloudflare R2 (S3-compatible, gratuit jusqu'à 10 Go) est le complément naturel |
+| Pas de **cron** en gratuit | `run_scheduled_publications` ne tourne pas : les publications programmées ne partiront pas seules. Render Cron Job (à partir de 1 $/mois) ou GitHub Actions planifié |
