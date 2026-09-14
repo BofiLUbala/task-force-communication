@@ -6,7 +6,7 @@ concerné a changé — modifier le web-app ne relance pas le build mobile.
 | Workflow | Fichier | Déclencheur | Résultat |
 |---|---|---|---|
 | Web App | `.github/workflows/deploy-web.yml` | push `main` sur `web-app/**` | site en ligne (Cloudflare Workers) |
-| API Django | `.github/workflows/deploy-backend.yml` | push `main` sur `backend/**` | image Docker sur GHCR + redéploiement |
+| API Django | `.github/workflows/deploy-backend.yml` | push `main` sur `backend/**` | image sur ECR + redéploiement App Runner |
 | App mobile | `.github/workflows/build-mobile.yml` | manuel, ou tag `mobile-v*` | APK Android / IPA iOS via EAS |
 
 ## Pourquoi ce découpage
@@ -43,20 +43,62 @@ règle `/* /index.html 200` (boucle de redirection détectée au déploiement).
 > `VITE_API_URL` est **inliné à la compilation**. Changer l'URL de l'API impose
 > de relancer le workflow, pas seulement de redémarrer le serveur.
 
-### API Django
-| Nom | Obligatoire | Rôle |
+### API Django (AWS)
+
+| Nom | Type | Rôle |
 |---|---|---|
-| `GITHUB_TOKEN` | fourni automatiquement | pousse l'image sur `ghcr.io` |
-| `DEPLOY_HOOK_URL` | optionnel | URL de redéploiement de l'hébergeur (Render : *Deploy hook*). Absent → l'image est publiée et le redéploiement reste manuel. |
+| `AWS_ROLE_ARN` | secret | rôle IAM assumé par GitHub via OIDC — aucune clé longue durée |
+| `APPRUNNER_SERVICE_ARN` | secret, optionnel | déclenche le redéploiement et attend le retour en `RUNNING`. Absent → l'image est seulement poussée sur ECR |
+| `AWS_REGION` | variable | défaut `eu-west-3` (Paris) |
+| `ECR_REPOSITORY` | variable | défaut `taskforce-backend` |
 
-L'image publiée est `ghcr.io/bofilubala/task-force-communication/backend:latest`
-(en minuscules : GHCR refuse les majuscules du nom de compte), plus un tag par
-commit pour revenir en arrière. Elle convient à App Runner, ECS, Render, Koyeb
-ou un VPS : l'hébergeur peut changer sans toucher au workflow.
+Préparation AWS, une seule fois. Le dépôt d'images :
 
-Les variables d'environnement de production (`DATABASE_URL`, `SECRET_KEY`,
-`ALLOWED_HOSTS`, S3, OAuth…) se configurent **chez l'hébergeur**, pas ici —
-voir `docs/DEPLOYMENT.md`.
+```bash
+aws ecr create-repository --repository-name taskforce-backend --region eu-west-3
+```
+
+Le fournisseur OIDC, à ne créer que s'il n'existe pas déjà sur le compte :
+
+```bash
+aws iam create-open-id-connect-provider   --url https://token.actions.githubusercontent.com   --client-id-list sts.amazonaws.com
+```
+
+Puis le rôle assumable **uniquement** par la branche `main` de ce dépôt —
+c'est cette condition `sub` qui empêche un autre dépôt d'utiliser le rôle :
+
+```bash
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+cat > trust.json <<JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::${ACCOUNT}:oidc-provider/token.actions.githubusercontent.com" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:BofiLUbala/task-force-communication:ref:refs/heads/main"
+      }
+    }
+  }]
+}
+JSON
+aws iam create-role --role-name github-actions-taskforce   --assume-role-policy-document file://trust.json
+aws iam attach-role-policy --role-name github-actions-taskforce   --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+```
+
+Si le workflow doit aussi redéployer App Runner, ajouter une politique en
+ligne autorisant `apprunner:StartDeployment` et `apprunner:DescribeService`
+sur l'ARN du service. L'ARN du rôle (`aws iam get-role --role-name
+github-actions-taskforce --query Role.Arn --output text`) devient
+`AWS_ROLE_ARN`.
+
+Le reste de l'infrastructure — RDS, S3 médias, App Runner, Route 53, la tâche
+planifiée `run_scheduled_publications` — est décrit pas à pas dans
+[DEPLOYMENT.md](DEPLOYMENT.md). Ce workflow ne couvre que la livraison
+continue de l'image.
 
 ### App mobile
 | Nom | Où le trouver |
@@ -100,33 +142,3 @@ avec `eas submit --platform android --latest` (idem `ios`).
 - Onglet **Actions** : le job doit être vert.
 - Web : rechargement forcé du site, la modification doit être visible.
 - API : `https://api.<domaine>/healthz/` → `{"status":"ok","database":"ok"}`.
-
-## Héberger l'API (Render)
-
-`render.yaml`, à la racine, décrit la base PostgreSQL et le service Docker.
-Render lit ce fichier et provisionne tout : rien à cliquer service par service.
-
-1. render.com > **New** > **Blueprint** > connecter le dépôt
-   `BofiLUbala/task-force-communication` > **Apply**.
-2. Render demande les valeurs marquées `sync: false` (SMTP, OAuth, stockage
-   objet). Elles peuvent rester vides au premier déploiement : l'API démarre,
-   seules les fonctions concernées restent inactives.
-3. Une fois l'URL connue (`https://taskforce-api.onrender.com`), renseigner
-   `SOCIAL_AUTH_REDIRECT_BASE` avec cette même URL.
-4. Vérifier : `https://taskforce-api.onrender.com/healthz/` doit renvoyer
-   `{"status":"ok","database":"ok"}`.
-5. Créer enfin le secret GitHub `VITE_API_URL` =
-   `https://taskforce-api.onrender.com/api`, puis relancer *Deploy web app*.
-
-Render redéploie l'API à chaque push sur `main`. Le workflow `deploy-backend`
-reste utile : il valide les migrations et publie l'image sur GHCR, ce qui
-permet de changer d'hébergeur sans rien reconstruire.
-
-### Limites du plan gratuit — à connaître avant la mise en service
-
-| Limite | Conséquence |
-|---|---|
-| Base supprimée après **30 jours** | passer en `basic-256mb` (7 $/mois) avant l'ouverture au public |
-| Service **endormi** après 15 min sans trafic | première requête ~50 s ; le plan `starter` (7 $/mois) supprime ce délai |
-| Système de fichiers **éphémère** | sans `AWS_STORAGE_BUCKET_NAME`, chaque image ou vidéo téléversée disparaît au redéploiement. Cloudflare R2 (S3-compatible, gratuit jusqu'à 10 Go) est le complément naturel |
-| Pas de **cron** en gratuit | `run_scheduled_publications` ne tourne pas : les publications programmées ne partiront pas seules. Render Cron Job (à partir de 1 $/mois) ou GitHub Actions planifié |

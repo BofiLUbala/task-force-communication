@@ -1,16 +1,21 @@
-# API Django -> image Docker sur GHCR, puis redeploiement de l'hebergeur.
+# API Django -> Amazon ECR, puis redeploiement App Runner.
 #
-# L'image construite ici (backend/Dockerfile) est celle decrite dans
-# docs/DEPLOYMENT.md : elle tourne telle quelle sur App Runner, ECS, Render,
-# Koyeb ou un VPS. Le workflow ne suppose donc aucun hebergeur precis :
-# il publie l'image, puis appelle un webhook de deploiement si le secret existe.
+# Architecture decrite dans docs/DEPLOYMENT.md :
+#   GitHub Actions -> ECR -> App Runner -> RDS PostgreSQL (+ S3 pour les medias)
 #
+# L'authentification passe par OIDC : GitHub obtient des identifiants AWS
+# temporaires en assumant un role. Aucune cle d'acces longue duree n'est
+# stockee dans le depot (procedure de creation du role : docs/CI-CD.md).
+#
+# Secrets requis :
+#   AWS_ROLE_ARN             arn:aws:iam::<compte>:role/github-actions-taskforce
 # Secret optionnel :
-#   DEPLOY_HOOK_URL  URL de redeploiement fournie par l'hebergeur
-#                    (Render : "Deploy hook" ; Koyeb / App Runner : webhook
-#                    ou auto-deploy sur nouvelle image, auquel cas ce secret
-#                    reste vide et rien n'est appele).
-# GITHUB_TOKEN suffit pour pousser sur ghcr.io : aucun secret a creer.
+#   APPRUNNER_SERVICE_ARN    ARN du service App Runner. Absent, ou si le
+#                            service est en auto-deploiement, l'image est
+#                            simplement poussee sur ECR.
+# Variables (Settings > Variables) :
+#   AWS_REGION               defaut eu-west-3 (Paris)
+#   ECR_REPOSITORY           defaut taskforce-backend
 
 name: Deploy backend
 
@@ -48,28 +53,30 @@ jobs:
           python manage.py check
           python manage.py makemigrations --check --dry-run
 
-  build-and-push:
+  deploy:
     needs: check
     runs-on: ubuntu-latest
     permissions:
+      # Requis par OIDC pour reclamer le jeton d'identite GitHub.
+      id-token: write
       contents: read
-      packages: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-3' }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'taskforce-backend' }}
     steps:
       - uses: actions/checkout@v4
 
-      # GHCR refuse les majuscules dans un nom de depot : BofiLUbala/... doit
-      # devenir bofilubala/... sinon le push echoue sur "must be lowercase".
-      - name: Calculer le nom de l'image
-        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/backend" >> "$GITHUB_ENV"
+      - name: Identifiants AWS temporaires (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Connexion a ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - uses: docker/setup-buildx-action@v3
-
-      - name: Connexion a GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build et push
         uses: docker/build-push-action@v6
@@ -77,19 +84,37 @@ jobs:
           context: backend
           push: true
           # Le tag SHA permet de revenir a une version precise ; latest est ce
-          # que l'hebergeur tire au redeploiement.
+          # que tire App Runner au redeploiement.
           tags: |
-            ${{ env.IMAGE }}:latest
-            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Declencher le redeploiement
+      # App Runner en auto-deploiement reagit tout seul au nouveau tag latest.
+      # Sinon ce declenchement explicite lance le deploiement et attend qu'il
+      # se termine, pour que le job echoue si le service ne demarre pas.
+      - name: Redeployer App Runner
         env:
-          DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+          SERVICE_ARN: ${{ secrets.APPRUNNER_SERVICE_ARN }}
         run: |
-          if [ -z "$DEPLOY_HOOK_URL" ]; then
-            echo "Aucun DEPLOY_HOOK_URL : l'image est publiee, le redeploiement reste manuel."
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "Aucun APPRUNNER_SERVICE_ARN : image poussee sur ECR, redeploiement non declenche."
             exit 0
           fi
-          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK_URL"
+          OPERATION=$(aws apprunner start-deployment \
+            --service-arn "$SERVICE_ARN" \
+            --query OperationId --output text)
+          echo "Deploiement $OPERATION en cours..."
+          for _ in $(seq 1 60); do
+            STATUS=$(aws apprunner describe-service \
+              --service-arn "$SERVICE_ARN" \
+              --query Service.Status --output text)
+            case "$STATUS" in
+              RUNNING) echo "Service RUNNING."; exit 0 ;;
+              CREATE_FAILED|DELETE_FAILED) echo "::error::Service en echec ($STATUS)"; exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::Le service n'est pas repasse en RUNNING apres 20 minutes."
+          exit 1
