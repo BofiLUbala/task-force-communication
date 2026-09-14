@@ -29,27 +29,12 @@ const isNarrowScreen = () =>
 
 export default function Home() {
   const { tr } = usePreferences();
-  const [latestNewsletter, setLatestNewsletter] = useState(null);
   const [videos, setVideos] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
   const [heroImageIndex, setHeroImageIndex] = useState(0);
   const [narrowScreen, setNarrowScreen] = useState(isNarrowScreen);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [staffImageIndex, setStaffImageIndex] = useState(0);
-  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [contactStatus, setContactStatus] = useState({ sending: false, message: '', error: '' });
-
-  async function sendContactMessage(event) {
-    event.preventDefault();
-    setContactStatus({ sending: true, message: '', error: '' });
-    try {
-      const { data } = await client.post('/contact/', contactForm);
-      setContactForm({ name: '', email: '', subject: '', message: '' });
-      setContactStatus({ sending: false, message: data.detail, error: '' });
-    } catch (requestError) {
-      setContactStatus({ sending: false, message: '', error: requestError.response?.data?.detail || tr('Envoi impossible. Réessayez plus tard.', 'Unable to send. Please try again later.') });
-    }
-  }
 
   useEffect(() => {
     client.get('/posts/')
@@ -66,9 +51,6 @@ export default function Home() {
           }))));
       })
       .catch(() => {});
-    client.get('/posts/', { params: { category: 'NEWSLETTER' } })
-      .then((res) => setLatestNewsletter((res.data.results || res.data)[0] || null))
-      .catch(() => setLatestNewsletter(null));
     client.get('/social-links/')
       .then((res) => setSocialLinks(res.data.results || res.data))
       .catch(() => {});
@@ -239,45 +221,6 @@ export default function Home() {
               </article>
             </div>
 
-            <section className="home-contact-card">
-              <div className="home-contact-icon"><span className="material-symbols-outlined">support_agent</span></div>
-              <div className="home-contact-copy">
-                <span>{tr('Besoin d’une information ?', 'Need information?')}</span>
-                <h3>{tr('Contactez la Task Force Présidentielle', 'Contact the Presidential Task Force')}</h3>
-                <p>{tr('Notre équipe est disponible pour recevoir vos questions et vos préoccupations.', 'Our team is available to receive your questions and concerns.')}</p>
-              </div>
-              <form className="home-contact-form" onSubmit={sendContactMessage}>
-                <input aria-label={tr('Nom complet', 'Full name')} placeholder={tr('Nom complet', 'Full name')} value={contactForm.name} onChange={(e) => setContactForm((form) => ({ ...form, name: e.target.value }))} required />
-                <input aria-label={tr('Adresse e-mail', 'Email address')} type="email" placeholder={tr('Adresse e-mail', 'Email address')} value={contactForm.email} onChange={(e) => setContactForm((form) => ({ ...form, email: e.target.value }))} required />
-                <input className="home-contact-form-wide" aria-label={tr('Objet', 'Subject')} placeholder={tr('Objet de votre message', 'Message subject')} value={contactForm.subject} onChange={(e) => setContactForm((form) => ({ ...form, subject: e.target.value }))} required />
-                <textarea className="home-contact-form-wide" aria-label={tr('Votre message', 'Your message')} placeholder={tr('Écrivez votre message...', 'Write your message...')} value={contactForm.message} onChange={(e) => setContactForm((form) => ({ ...form, message: e.target.value }))} required />
-                <button type="submit" className="btn btn-gold home-contact-action" disabled={contactStatus.sending}>
-                  {contactStatus.sending ? tr('Envoi...', 'Sending...') : tr('Envoyer le message', 'Send message')}
-                  <span className="material-symbols-outlined">send</span>
-                </button>
-                {contactStatus.message && <p className="home-contact-feedback is-success">{contactStatus.message}</p>}
-                {contactStatus.error && <p className="home-contact-feedback is-error">{contactStatus.error}</p>}
-              </form>
-            </section>
-
-            <section className="latest-newsletter-card">
-              <div className="latest-newsletter-icon"><span className="material-symbols-outlined">forward_to_inbox</span></div>
-              <div className="latest-newsletter-copy">
-                <span>{tr('Dernière newsletter', 'Latest newsletter')}</span>
-                {latestNewsletter ? (
-                  <>
-                    <h3>{latestNewsletter.title}</h3>
-                    {latestNewsletter.excerpt && <p>{latestNewsletter.excerpt}</p>}
-                  </>
-                ) : (
-                  <h3>{tr('Aucune newsletter publiée pour le moment.', 'No newsletter has been published yet.')}</h3>
-                )}
-              </div>
-              <a href={latestNewsletter ? `/publications/${latestNewsletter.slug}` : '/newsletter'} className="latest-newsletter-action">
-                {tr(latestNewsletter ? 'Lire le message' : 'Voir les newsletters', latestNewsletter ? 'Read message' : 'View newsletters')}
-                <span className="material-symbols-outlined">arrow_forward</span>
-              </a>
-            </section>
           </div>
 
         </div>
