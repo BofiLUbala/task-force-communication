@@ -108,7 +108,21 @@ class SocialMediaLinkTests(APITestCase):
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class NewsletterTests(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username='newsletter-editor', password='password', role=User.Role.AGENT)
+        self.agent = User.objects.create_user(
+            username='newsletter-editor', password='password', role=User.Role.AGENT,
+        )
+        self.hierarchy = User.objects.create_user(
+            username='newsletter-chief', password='password', role=User.Role.HIERARCHY,
+        )
+        self.user = self.hierarchy
+
+    def _draft(self, author=None):
+        return PublicPost.objects.create(
+            title='Info salubrité', slug='info-salubrite', category='NEWSLETTER',
+            excerpt='Résumé', body='<p>Message officiel</p>',
+            published_by=author or self.hierarchy,
+            newsletter_subject='Objet officiel', is_published=False,
+        )
 
     def test_public_can_subscribe_unsubscribe_and_reactivate(self):
         response = self.client.post('/api/newsletter/subscribe/', {'email': 'Reader@Example.com', 'name': 'Lecteur'})
@@ -126,14 +140,53 @@ class NewsletterTests(APITestCase):
         subscriber.refresh_from_db()
         self.assertTrue(subscriber.is_active)
 
-    def test_editor_can_test_then_send_newsletter(self):
-        subscriber = NewsletterSubscriber.objects.create(email='subscriber@example.com')
-        post = PublicPost.objects.create(
-            title='Info salubrité', slug='info-salubrite', category='NEWSLETTER',
-            excerpt='Résumé', body='<p>Message officiel</p>', published_by=self.user,
-            newsletter_subject='Objet officiel', is_published=False,
+    def test_agent_cannot_send_or_test_a_newsletter(self):
+        """Sending an official newsletter is a hierarchy act, enforced server-side."""
+        post = self._draft(author=self.agent)
+        self.client.force_authenticate(self.agent)
+
+        test_response = self.client.post(
+            f'/api/posts/{post.slug}/test-newsletter/', {'email': 'test@example.com'}, format='json',
         )
-        self.client.force_authenticate(self.user)
+        self.assertEqual(test_response.status_code, 403)
+
+        send_response = self.client.post(f'/api/posts/{post.slug}/send-newsletter/', {}, format='json')
+        self.assertEqual(send_response.status_code, 403)
+
+        stats_response = self.client.get(f'/api/posts/{post.slug}/newsletter-stats/')
+        self.assertEqual(stats_response.status_code, 403)
+
+        self.assertEqual(len(mail.outbox), 0)
+        post.refresh_from_db()
+        self.assertIsNone(post.newsletter_sent_at)
+
+    def test_newsletter_cannot_be_sent_twice(self):
+        NewsletterSubscriber.objects.create(email='subscriber@example.com')
+        post = self._draft()
+        self.client.force_authenticate(self.hierarchy)
+
+        first = self.client.post(f'/api/posts/{post.slug}/send-newsletter/', {}, format='json')
+        self.assertEqual(first.status_code, 200)
+
+        second = self.client.post(f'/api/posts/{post.slug}/send-newsletter/', {}, format='json')
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(NewsletterDelivery.objects.filter(post=post).count(), 1)
+
+    def test_unsubscribed_readers_are_excluded_from_delivery(self):
+        NewsletterSubscriber.objects.create(email='active@example.com')
+        NewsletterSubscriber.objects.create(email='gone@example.com', is_active=False)
+        post = self._draft()
+        self.client.force_authenticate(self.hierarchy)
+
+        response = self.client.post(f'/api/posts/{post.slug}/send-newsletter/', {}, format='json')
+
+        self.assertEqual(response.data['sent'], 1)
+        self.assertEqual(mail.outbox[-1].to, ['active@example.com'])
+
+    def test_hierarchy_can_test_then_send_newsletter(self):
+        subscriber = NewsletterSubscriber.objects.create(email='subscriber@example.com')
+        post = self._draft()
+        self.client.force_authenticate(self.hierarchy)
 
         draft_feed = self.client.get('/api/posts/', {'category': 'NEWSLETTER'})
         self.assertEqual(draft_feed.data.get('results', draft_feed.data), [])

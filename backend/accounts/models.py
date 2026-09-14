@@ -4,10 +4,26 @@ from django.db import models
 
 class User(AbstractUser):
     class Role(models.TextChoices):
-        AGENT = 'AGENT', 'Agent terrain'
+        SUPER_ADMIN = 'SUPER_ADMIN', 'Super administrateur'
         HIERARCHY = 'HIERARCHY', 'Hiérarchie'
+        AGENT = 'AGENT', 'Agent terrain'
+
+    class AccountStatus(models.TextChoices):
+        INVITED = 'INVITED', 'Invitation envoyée'
+        PENDING_EMAIL = 'PENDING_EMAIL', 'E-mail à confirmer'
+        ACTIVE = 'ACTIVE', 'Actif'
+        REVOKED = 'REVOKED', 'Accès révoqué'
+
+    #: Roles that exist only once in the whole application.
+    SINGLETON_ROLES = (Role.SUPER_ADMIN, Role.HIERARCHY)
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.AGENT)
+    status = models.CharField(
+        max_length=20, choices=AccountStatus.choices, default=AccountStatus.ACTIVE,
+    )
+    invited_by = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='invited_users',
+    )
     matricule = models.CharField(max_length=50, unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=30, blank=True)
     unit = models.CharField(max_length=100, blank=True)
@@ -21,11 +37,39 @@ class User(AbstractUser):
     def is_hierarchy(self):
         return self.role == self.Role.HIERARCHY
 
+    @property
+    def is_super_admin(self):
+        return self.role == self.Role.SUPER_ADMIN
+
+    @property
+    def manageable_roles(self):
+        """Roles whose accounts this user may invite, revoke or delete.
+
+        The super admin only ever provisions the single hierarchy account —
+        staffing the field is the hierarchy's job, not a technical one.
+        """
+        if self.is_super_admin:
+            return (self.Role.HIERARCHY,)
+        if self.is_hierarchy:
+            return (self.Role.AGENT,)
+        return ()
+
+    def can_manage(self, other):
+        return other.role in self.manageable_roles and other.pk != self.pk
+
+    def mark_active(self):
+        self.is_active = True
+        self.status = self.AccountStatus.ACTIVE
+        if self.role == self.Role.AGENT:
+            self.is_active_agent = True
+        self.save(update_fields=('is_active', 'status', 'is_active_agent'))
+
 
 class OneTimeToken(models.Model):
     class Purpose(models.TextChoices):
         EMAIL_VERIFICATION = 'EMAIL_VERIFICATION', "Confirmation d’adresse e-mail"
         PASSWORD_RESET = 'PASSWORD_RESET', 'Réinitialisation du mot de passe'
+        INVITATION = 'INVITATION', 'Invitation à rejoindre la plateforme'
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='one_time_tokens')
     purpose = models.CharField(max_length=30, choices=Purpose.choices)

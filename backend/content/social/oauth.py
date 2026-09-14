@@ -4,10 +4,13 @@ Each platform requires its own developer app (client id/secret) configured
 via environment variables — see config/settings.py. A platform whose
 credentials are empty is reported as unavailable and cannot be connected.
 """
+import logging
 from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class OAuthError(Exception):
@@ -15,10 +18,30 @@ class OAuthError(Exception):
 
 
 def _redirect_uri(platform):
+    """The callback URL, which must match the provider's console *exactly*.
+
+    Normally derived from one base URL so every platform stays consistent. A
+    per-platform override exists because a provider console sometimes holds a
+    URL that cannot be changed freely — LinkedIn in particular refuses to
+    update a redirect URI while an app is under review.
+    """
+    override = getattr(settings, f'{platform.upper()}_OAUTH_REDIRECT_URI', '')
+    if override:
+        return override
     return f'{settings.SOCIAL_AUTH_REDIRECT_BASE}/api/social-accounts/oauth/{platform.lower()}/callback/'
 
 
-LINKEDIN_SCOPES = 'openid profile w_member_social'
+#: Posting to an organisation page needs its own LinkedIn product; asking for
+#: it unconditionally would break personal connections on apps that do not
+#: have that product approved, so it follows the configured organisation URN.
+LINKEDIN_MEMBER_SCOPES = 'openid profile w_member_social'
+LINKEDIN_ORGANIZATION_SCOPE = 'w_organization_social'
+
+
+def linkedin_scopes():
+    if settings.LINKEDIN_ORGANIZATION_URN:
+        return f'{LINKEDIN_MEMBER_SCOPES} {LINKEDIN_ORGANIZATION_SCOPE}'
+    return LINKEDIN_MEMBER_SCOPES
 GOOGLE_SCOPES = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'
 TIKTOK_SCOPES = 'video.publish video.upload user.info.basic'
 FACEBOOK_SCOPES = 'pages_show_list,pages_manage_posts,pages_read_engagement'
@@ -44,7 +67,7 @@ def authorize_url(platform, state):
             'client_id': settings.LINKEDIN_CLIENT_ID,
             'redirect_uri': _redirect_uri(platform),
             'state': state,
-            'scope': LINKEDIN_SCOPES,
+            'scope': linkedin_scopes(),
         }
         return f'https://www.linkedin.com/oauth/v2/authorization?{urlencode(params)}'
 
@@ -142,6 +165,26 @@ def get_facebook_page(user_access_token):
         return '', '', ''
     page = pages[0]
     return page.get('id', ''), page.get('name', ''), page.get('access_token', '')
+
+
+def get_youtube_channel(access_token):
+    """Fetch the authorised channel's id/title so the back-office can show
+    which channel is connected — and so an operator notices immediately if
+    the wrong Google account authorised the app. Returns (channel_id, title)."""
+    resp = requests.get(
+        'https://www.googleapis.com/youtube/v3/channels',
+        params={'part': 'snippet', 'mine': 'true'},
+        headers={'Authorization': f'Bearer {access_token}'},
+        timeout=15,
+    )
+    if not resp.ok:
+        logger.warning('YouTube channel lookup failed (HTTP %s)', resp.status_code)
+        return '', ''
+    items = (resp.json() or {}).get('items', [])
+    if not items:
+        return '', ''
+    channel = items[0]
+    return channel.get('id', ''), channel.get('snippet', {}).get('title', '')
 
 
 def get_linkedin_identity(access_token):

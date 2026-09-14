@@ -7,12 +7,13 @@ import '../pages/internal/Internal.css';
 const NAV_ICONS = [
   [/\/rapports$/, 'assignment_turned_in'],
   [/\/validation$/, 'fact_check'],
-  [/\/publications\/actualite$/, 'newspaper'],
-  [/\/publications\/image$/, 'image'],
-  [/\/publications\/video$/, 'movie'],
-  [/\/publications\/communique$/, 'picture_as_pdf'],
-  [/\/publications\/newsletter$/, 'forward_to_inbox'],
+  [/\/publications\/nouvelle$/, 'post_add'],
+  [/\/publications\/brouillons$/, 'draft'],
+  [/\/publications\/programmees$/, 'schedule'],
+  [/\/publications$/, 'campaign'],
   [/\/reseaux-sociaux$/, 'share'],
+  [/\/admin$/, 'admin_panel_settings'],
+  [/\/agents$/, 'group'],
   [/\/statistiques$/, 'bar_chart'],
 ];
 

@@ -1,21 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import client from '../../api/client';
 import DashboardShell from '../../components/DashboardShell';
+import PublicationFeed from '../../components/PublicationFeed';
 import usePreferences from '../../hooks/usePreferences';
+import { internalLinks } from '../../utils/publicationNav';
 import './Internal.css';
 
 export default function HierarchyDashboard() {
   const { tr, language } = usePreferences();
-  const links = [
-    { to: '/espace/validation', label: tr('Rapports en attente', 'Pending reports') },
-    { to: '/espace/publications/actualite', label: tr('Publier une actualité', 'Publish news') },
-    { to: '/espace/publications/image', label: tr('Publier une image', 'Publish an image') },
-    { to: '/espace/publications/video', label: tr('Publier une vidéo', 'Publish a video') },
-    { to: '/espace/publications/communique', label: tr('Publier un communiqué', 'Publish a release') },
-    { to: '/espace/publications/newsletter', label: tr('Publier une newsletter', 'Publish a newsletter') },
-    { to: '/espace/reseaux-sociaux', label: tr('Réseaux sociaux', 'Social media') },
-    { to: '/espace/statistiques', label: tr('Statistiques', 'Statistics') },
-  ];
+  const links = internalLinks('HIERARCHY', tr);
   const [reports, setReports] = useState([]);
   const [statusFilter, setStatusFilter] = useState('PENDING');
 
@@ -43,6 +36,8 @@ export default function HierarchyDashboard() {
       <div className="dash-topbar">
         <h1>{tr('Validation des rapports', 'Report review')}</h1>
       </div>
+
+      <PublicationFeed limit={3} />
 
       <div className="stats-bar">
         <div className="stat-box"><div className="stat-value">{stats.pending}</div><div className="stat-label">{tr('En attente', 'Pending')}</div></div>

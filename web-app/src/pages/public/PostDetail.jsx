@@ -85,6 +85,11 @@ export default function PostDetail() {
     );
   }
 
+  // Documents are listed for download; only visual media belong in the gallery,
+  // otherwise a PDF would render as an empty <video> element.
+  const visualMedia = (post.gallery || []).filter((m) => m.media_type !== 'DOCUMENT');
+  const documents = (post.gallery || []).filter((m) => m.media_type === 'DOCUMENT');
+
   return (
     <div className="post-detail-page">
       <div className="post-detail-header">
@@ -130,17 +135,55 @@ export default function PostDetail() {
         </a>
       )}
 
-      {post.gallery && post.gallery.length > 0 && (
+      {visualMedia.length > 0 && (
         <div className="post-detail-gallery">
-          {post.gallery.map((item) => (
-            item.media_type === 'PHOTO' ? (
-              <img key={item.id} src={item.file} alt={item.caption || post.title} />
-            ) : (
-              <video key={item.id} controls preload="metadata" playsInline>
+          {visualMedia.map((item) => {
+            if (item.media_type === 'PHOTO') {
+              return <img key={item.id} src={item.file} alt={item.alt_text || item.caption || post.title} />;
+            }
+            if (item.media_type === 'AUDIO') {
+              return <audio key={item.id} controls preload="metadata" src={item.file} />;
+            }
+            return (
+              <video key={item.id} controls preload="metadata" playsInline poster={item.thumbnail || undefined}>
                 <source src={item.file} />
               </video>
-            )
+            );
+          })}
+        </div>
+      )}
+
+      {documents.length > 0 && (
+        <div className="post-detail-documents">
+          <h2>{tr('Documents', 'Documents')}</h2>
+          {documents.map((item) => (
+            <a
+              key={item.id}
+              href={item.file}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="post-detail-attachment"
+            >
+              <span className="material-symbols-outlined">description</span>
+              {item.title || item.original_filename || tr('Télécharger le document', 'Download the document')}
+            </a>
           ))}
+        </div>
+      )}
+
+      {post.links && post.links.length > 0 && (
+        <div className="post-detail-links">
+          <h2>{tr('Liens', 'Links')}</h2>
+          <ul>
+            {post.links.map((link) => (
+              <li key={link.id}>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  <span className="material-symbols-outlined">open_in_new</span>
+                  {link.label || link.url}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

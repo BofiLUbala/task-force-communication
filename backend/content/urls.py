@@ -16,7 +16,11 @@ from .views import (
 
 router = DefaultRouter()
 router.register('reports', ReportViewSet, basename='report')
+# `posts` is the historical prefix — every existing bookmark, the public site
+# and the mobile build in the field still call it, so it stays. `publications`
+# is the same viewset under the name the product now uses everywhere else.
 router.register('posts', PublicPostViewSet, basename='post')
+router.register('publications', PublicPostViewSet, basename='publication')
 router.register('social-links', SocialMediaLinkViewSet, basename='social-link')
 router.register('social-accounts', SocialAccountViewSet, basename='social-account')
 

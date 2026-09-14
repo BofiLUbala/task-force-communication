@@ -1,0 +1,4 @@
+# SPA fallback: every client-side route must return index.html, otherwise a
+# hard refresh on /espace/publications/... returns 404 from the static host.
+# Read by Cloudflare Pages and Netlify.
+/*    /index.html   200

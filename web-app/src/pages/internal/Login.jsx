@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import PreferenceControls from '../../components/PreferenceControls';
 import usePreferences from '../../hooks/usePreferences';
+import apiError from '../../utils/apiError';
 import './Internal.css';
 
 export default function Login() {
@@ -20,9 +21,15 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(username, password);
-      navigate(user.role === 'HIERARCHY' ? '/espace/validation' : '/espace/rapports');
-    } catch {
-      setError(tr('Identifiants incorrects. Veuillez réessayer.', 'Incorrect credentials. Please try again.'));
+      const landing = { SUPER_ADMIN: '/espace/admin', HIERARCHY: '/espace/validation' };
+      navigate(landing[user.role] || '/espace/rapports');
+    } catch (requestError) {
+      // A 401 is the only answer that actually means "wrong credentials".
+      // Anything else — backend down, CORS, 500 — gets its own wording, so a
+      // reachability problem is not mistaken for a bad password.
+      setError(requestError?.response?.status === 401
+        ? tr('Identifiants incorrects. Veuillez réessayer.', 'Incorrect credentials. Please try again.')
+        : apiError(requestError, tr('Connexion impossible. Veuillez réessayer.', 'Sign-in failed. Please try again.'), tr));
     } finally {
       setLoading(false);
     }

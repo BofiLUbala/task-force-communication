@@ -291,3 +291,161 @@
 @media (min-width: 1800px) {
   .dash-main { max-width: 1560px; margin: 0 auto; width: 100%; padding: 40px 48px; }
 }
+
+/* --- Account management (super admin / hierarchy) --- */
+.auth-note { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; margin: 12px 0 0; }
+
+.account-notice { border-radius: var(--radius); padding: 12px 16px; font-size: 0.86rem; margin-bottom: 18px; }
+.account-notice-ok { background: #e6f4ea; color: var(--status-validated); }
+.account-notice-error { background: #fbe7e7; color: var(--status-rejected); }
+.account-notice-warn { background: #fdf3d8; color: #8a6412; }
+
+.action-delete { background: var(--status-rejected); color: var(--white); }
+.btn-danger { background: var(--status-rejected); color: var(--white); }
+
+.account-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(6, 18, 38, 0.62);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 60;
+}
+.account-modal {
+  background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 28px; max-width: 520px; width: 100%;
+}
+.account-modal h2 { margin: 0 0 14px; font-size: 1.1rem; color: var(--navy); }
+.account-modal p { margin: 0 0 12px; font-size: 0.88rem; line-height: 1.6; color: var(--text-muted); }
+.account-modal-hint { font-style: italic; }
+.account-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* --- Connected social accounts --- */
+.social-account-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 0.74rem; color: var(--text-muted); }
+.social-account-id { font-family: monospace; }
+.social-account-error { color: var(--status-rejected); flex-basis: 100%; }
+
+/* ==========================================================================
+   Publications: dashboard, feed and detail
+   ========================================================================== */
+
+.pub-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.pub-stat {
+  display: flex; align-items: center; gap: 13px;
+  background: var(--surface-container-lowest, #fff); border: 1px solid #e6eaf2;
+  border-radius: 10px; padding: 16px;
+}
+.pub-stat .material-symbols-outlined { font-size: 26px; color: var(--navy); }
+.pub-stat strong { display: block; font-size: 1.5rem; color: var(--navy); line-height: 1.1; }
+.pub-stat small { color: var(--text-muted); font-size: 0.78rem; }
+.pub-stat-failed_deliveries .material-symbols-outlined { color: var(--status-rejected); }
+.pub-stat-scheduled .material-symbols-outlined { color: var(--status-pending); }
+
+.pub-filters { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.pub-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.pub-tab {
+  border: 1px solid #e6eaf2; background: #fff; border-radius: 999px;
+  padding: 7px 15px; font-family: inherit; font-size: 0.81rem;
+  color: var(--text-muted); cursor: pointer;
+}
+.pub-tab-active { background: var(--navy); border-color: var(--navy); color: #fff; font-weight: 700; }
+.pub-filter-side { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.pub-filter-side select { padding: 8px 11px; border: 1px solid #d6dbe6; border-radius: 6px; font-family: inherit; font-size: 0.82rem; }
+.pub-mine { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; color: var(--text-muted); }
+
+.pub-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pub-row {
+  display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  background: #fff; border: 1px solid #e6eaf2; border-radius: 10px; padding: 14px 16px;
+}
+.pub-row-main { flex: 1 1 260px; min-width: 0; }
+.pub-row-title { display: block; font-weight: 700; color: var(--navy); font-size: 0.95rem; text-decoration: none; }
+.pub-row-title:hover { text-decoration: underline; }
+.pub-row-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.pub-row-meta small { color: var(--text-muted); font-size: 0.76rem; }
+
+.pub-channel-strip { list-style: none; display: flex; gap: 4px; margin: 0; padding: 0; flex-wrap: wrap; }
+.chan {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 56px; padding: 5px 6px; border-radius: 6px; background: #f5f7fb;
+}
+.chan-name { font-size: 0.62rem; letter-spacing: 0.04em; color: var(--text-muted); }
+.chan .material-symbols-outlined { font-size: 17px; color: var(--outline); }
+.chan-SUCCESS .material-symbols-outlined { color: var(--status-validated); }
+.chan-FAILED .material-symbols-outlined { color: var(--status-rejected); }
+.chan-SKIPPED .material-symbols-outlined { color: var(--status-pending); }
+.pub-row-actions .btn { padding: 8px 14px; font-size: 0.8rem; }
+
+.badge-type { background: var(--surface-container-high); color: var(--navy); }
+.badge-type-COMMUNIQUE { background: var(--navy); color: #fff; }
+.badge-type-NEWSLETTER { background: var(--gold-light); color: #5a4a00; }
+.badge-type-ACTUALITE { background: var(--surface-container-high); color: var(--navy); }
+.badge-type-ACTIVITE { background: #e6f4ea; color: var(--status-validated); }
+.badge-status { background: #eef2f8; color: var(--text-muted); }
+.badge-status-PUBLISHED { background: #e6f4ea; color: var(--status-validated); }
+.badge-status-PARTIAL_SUCCESS { background: #fdf3d8; color: #8a6412; }
+.badge-status-FAILED { background: #fbe7e7; color: var(--status-rejected); }
+.badge-status-SCHEDULED { background: var(--surface-container-high); color: var(--navy); }
+
+/* --- Internal feed --- */
+.publication-feed { margin-bottom: 28px; }
+.feed-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.feed-head h2 { margin: 0; font-size: 1.05rem; color: var(--navy); }
+.feed-unread { background: var(--gold-light); color: #5a4a00; border-radius: 999px; padding: 4px 12px; font-size: 0.76rem; font-weight: 700; }
+.feed-state { color: var(--text-muted); font-size: 0.86rem; }
+.feed-state-error { color: var(--status-rejected); }
+
+.feed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.feed-card { background: #fff; border: 1px solid #e6eaf2; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; }
+.feed-card-unread { border-left: 3px solid var(--gold); }
+.feed-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.feed-card-head small { color: var(--text-muted); font-size: 0.74rem; }
+.feed-card h3 { margin: 0 0 9px; font-size: 0.95rem; color: var(--navy); line-height: 1.35; }
+.feed-cover { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 9px; }
+.feed-preview { margin: 0 0 12px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.55; }
+.feed-card-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.feed-card-foot small { color: var(--text-muted); font-size: 0.75rem; }
+.feed-read { display: inline-flex; align-items: center; gap: 5px; color: var(--navy); font-weight: 700; font-size: 0.81rem; text-decoration: none; }
+.feed-read .material-symbols-outlined { font-size: 16px; }
+
+/* --- Publication detail --- */
+.detail-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+.detail-meta small { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 0.79rem; }
+.detail-meta .material-symbols-outlined { font-size: 16px; }
+.detail-cover { width: 100%; max-height: 340px; object-fit: cover; border-radius: 10px; margin-bottom: 18px; }
+.detail-body { background: #fff; border: 1px solid #e6eaf2; border-radius: 10px; padding: 20px; line-height: 1.7; color: var(--on-surface); }
+.detail-body img { max-width: 100%; height: auto; border-radius: 8px; }
+.detail-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 18px; }
+.detail-gallery figure { margin: 0; }
+.detail-gallery img { width: 100%; height: 170px; object-fit: cover; border-radius: 8px; }
+.detail-gallery figcaption { font-size: 0.76rem; color: var(--text-muted); margin-top: 5px; }
+.detail-attachments { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 7px; }
+.detail-attachments li { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; }
+.detail-attachments a { color: var(--navy); font-weight: 600; }
+.detail-attachments .material-symbols-outlined { font-size: 18px; color: var(--outline); }
+
+.delivery-report { margin-top: 30px; }
+.delivery-report h2 { font-size: 1.05rem; color: var(--navy); margin: 0 0 14px; }
+.delivery-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.delivery-row {
+  display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap;
+  background: #fff; border: 1px solid #e6eaf2; border-left-width: 3px; border-radius: 10px; padding: 14px 16px;
+}
+.delivery-SUCCESS { border-left-color: var(--status-validated); }
+.delivery-FAILED { border-left-color: var(--status-rejected); }
+.delivery-SKIPPED { border-left-color: var(--status-pending); }
+.delivery-icon { font-size: 22px; color: var(--navy); }
+.delivery-main { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.delivery-main strong { color: var(--navy); font-size: 0.9rem; }
+.delivery-main > span.badge { align-self: flex-start; }
+.delivery-main p { margin: 0; font-size: 0.83rem; color: var(--text-muted); }
+.delivery-main small { font-size: 0.77rem; color: var(--text-muted); }
+.delivery-error { color: var(--status-rejected) !important; }
+.delivery-main a { color: var(--navy); font-weight: 700; font-size: 0.81rem; }
+.delivery-row .btn { padding: 8px 14px; font-size: 0.8rem; }
+
+.badge-result-SUCCESS { background: var(--status-validated); color: #fff; }
+
+@media (max-width: 640px) {
+  .pub-row { flex-direction: column; align-items: stretch; }
+  .pub-channel-strip { justify-content: flex-start; }
+  .preview-summary { gap: 14px; }
+  .confirm-panel dl > div { flex-direction: column; gap: 2px; }
+  .confirm-panel dd { text-align: left; }
+}

@@ -15,6 +15,7 @@ export default function SocialLinksDashboard() {
   const links = [
     { to: '/espace/rapports', label: tr('Mes rapports', 'My reports') },
     { to: '/espace/validation', label: tr('Rapports en attente', 'Pending reports') },
+    { to: '/espace/agents', label: tr('Comptes agents', 'Agent accounts') },
     { to: '/espace/publications/actualite', label: tr('Publier une actualité', 'Publish news') },
     { to: '/espace/publications/image', label: tr('Publier une image', 'Publish an image') },
     { to: '/espace/publications/video', label: tr('Publier une vidéo', 'Publish a video') },
@@ -24,6 +25,7 @@ export default function SocialLinksDashboard() {
   ].filter((link) => {
     if (link.to === '/espace/rapports') return !isHierarchy;
     if (link.to === '/espace/validation') return isHierarchy;
+    if (link.to === '/espace/agents') return isHierarchy;
     return true;
   });
 
@@ -138,16 +140,42 @@ export default function SocialLinksDashboard() {
                   <td>
                     {!p.configured ? (
                       <span className="badge badge-REJECTED">{tr('Non configuré', 'Not configured')}</span>
-                    ) : p.connected ? (
-                      <span className="badge badge-VALIDATED">{tr('Connecté', 'Connected')}{p.account_name ? ` — ${p.account_name}` : ''}</span>
-                    ) : (
+                    ) : !p.connected ? (
                       <span className="badge badge-PENDING">{tr('Non connecté', 'Not connected')}</span>
+                    ) : p.health === 'RECONNECT_REQUIRED' ? (
+                      <span className="badge badge-PENDING">{tr('Reconnexion requise', 'Reconnect required')}</span>
+                    ) : (
+                      <span className="badge badge-VALIDATED">{tr('Connecté', 'Connected')}</span>
+                    )}
+                    {p.connected && (
+                      <div className="social-account-meta">
+                        {p.account_name && <span>{p.account_name}</span>}
+                        {p.external_account_id && <span className="social-account-id">#{p.external_account_id}</span>}
+                        {p.connected_at && (
+                          <span>
+                            {tr('connecté le ', 'connected on ')}
+                            {new Date(p.connected_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {p.last_used_at && (
+                          <span>
+                            {tr('dernière publication ', 'last publication ')}
+                            {new Date(p.last_used_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {p.last_error && <span className="social-account-error">{p.last_error}</span>}
+                      </div>
                     )}
                   </td>
                   <td className="actions">
                     {p.configured && !p.connected && (
                       <button className="action-btn action-approve" onClick={() => connect(p.platform)}>
                         {tr('Connecter', 'Connect')}
+                      </button>
+                    )}
+                    {p.connected && (
+                      <button className="action-btn action-approve" onClick={() => connect(p.platform)}>
+                        {tr('Reconnecter', 'Reconnect')}
                       </button>
                     )}
                     {p.connected && (

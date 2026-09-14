@@ -142,3 +142,7 @@ button { font-family: inherit; cursor: pointer; }
 .badge-PENDING { background: var(--status-pending); }
 .badge-VALIDATED { background: var(--status-validated); }
 .badge-REJECTED { background: var(--status-rejected); }
+.badge-INVITED { background: var(--status-pending); }
+.badge-PENDING_EMAIL { background: var(--navy-light); color: var(--navy); }
+.badge-ACTIVE { background: var(--status-validated); }
+.badge-REVOKED { background: var(--status-rejected); }

@@ -2,30 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../../api/client';
 import DashboardShell from '../../components/DashboardShell';
+import PublicationFeed from '../../components/PublicationFeed';
 import usePreferences from '../../hooks/usePreferences';
+import { internalLinks } from '../../utils/publicationNav';
 import './Internal.css';
 
 const emptyForm = { title: '', incident_type: '', location: '', description: '' };
 
 export default function AgentDashboard() {
   const { tr, language } = usePreferences();
-  const links = [
-    { to: '/espace/rapports', label: tr('Mes rapports', 'My reports') },
-    { to: '/espace/publications/actualite', label: tr('Publier une actualité', 'Publish news') },
-    { to: '/espace/publications/image', label: tr('Publier une image', 'Publish an image') },
-    { to: '/espace/publications/video', label: tr('Publier une vidéo', 'Publish a video') },
-    { to: '/espace/publications/communique', label: tr('Publier un communiqué', 'Publish a release') },
-    { to: '/espace/publications/newsletter', label: tr('Publier une newsletter', 'Publish a newsletter') },
-    { to: '/espace/reseaux-sociaux', label: tr('Réseaux sociaux', 'Social media') },
-  ];
-  const publishingFeatures = [
-    { to: '/espace/publications/actualite', icon: 'newspaper', title: tr('Publier une actualité', 'Publish news'), text: tr('Rédiger et diffuser une information officielle.', 'Write and share official news.') },
-    { to: '/espace/publications/image', icon: 'image', title: tr('Publier une image', 'Publish an image'), text: tr('Ajouter une photo dans la galerie publique.', 'Add a photo to the public gallery.') },
-    { to: '/espace/publications/video', icon: 'movie', title: tr('Publier une vidéo', 'Publish a video'), text: tr('Mettre une nouvelle vidéo à la disposition du public.', 'Make a new video available to the public.') },
-    { to: '/espace/publications/communique', icon: 'picture_as_pdf', title: tr('Publier un communiqué', 'Publish a release'), text: tr('Partager un communiqué officiel avec son PDF.', 'Share an official release and its PDF.') },
-    { to: '/espace/publications/newsletter', icon: 'forward_to_inbox', title: tr('Publier une newsletter', 'Publish a newsletter'), text: tr('Publier un nouveau message dans l’espace Newsletter.', 'Publish a new message in the Newsletter section.') },
-    { to: '/espace/reseaux-sociaux', icon: 'share', title: tr('Réseaux sociaux', 'Social media'), text: tr('Ajouter un lien vers un réseau social affiché sur l’accueil.', 'Add a social network link shown on the homepage.') },
-  ];
+  const links = internalLinks('AGENT', tr);
   const [reports, setReports] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
@@ -60,17 +46,28 @@ export default function AgentDashboard() {
       </div>
 
       <section className="publishing-features" aria-labelledby="publishing-title">
-        <h2 id="publishing-title">{tr('Outils de publication', 'Publishing tools')}</h2>
+        <h2 id="publishing-title">{tr('Publier', 'Publish')}</h2>
         <div className="publishing-feature-grid">
-          {publishingFeatures.map((feature) => (
-            <Link className="publishing-feature-card" to={feature.to} key={feature.to}>
-              <span className="material-symbols-outlined">{feature.icon}</span>
-              <div><h3>{feature.title}</h3><p>{feature.text}</p></div>
-              <span className="material-symbols-outlined feature-arrow">arrow_forward</span>
-            </Link>
-          ))}
+          <Link className="publishing-feature-card" to="/espace/publications/nouvelle">
+            <span className="material-symbols-outlined">post_add</span>
+            <div>
+              <h3>{tr('Nouvelle publication', 'New publication')}</h3>
+              <p>{tr('Un seul formulaire pour tout type de contenu et toutes les destinations.', 'One form for every content type and every destination.')}</p>
+            </div>
+            <span className="material-symbols-outlined feature-arrow">arrow_forward</span>
+          </Link>
+          <Link className="publishing-feature-card" to="/espace/publications">
+            <span className="material-symbols-outlined">campaign</span>
+            <div>
+              <h3>{tr('Mes publications', 'My publications')}</h3>
+              <p>{tr('Brouillons, programmées, publiées et état de diffusion.', 'Drafts, scheduled, published and delivery status.')}</p>
+            </div>
+            <span className="material-symbols-outlined feature-arrow">arrow_forward</span>
+          </Link>
         </div>
       </section>
+
+      <PublicationFeed />
 
       {showForm && (
         <form className="report-form" onSubmit={handleSubmit}>

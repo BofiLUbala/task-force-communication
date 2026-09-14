@@ -103,3 +103,31 @@ def send_password_reset_email(user):
         'Choisir un nouveau mot de passe', link,
         'Vous n’avez pas demandé cette modification ? Ignorez ce message ; votre mot de passe actuel reste inchangé.',
     )
+
+
+def peek_one_time_token(raw_token, purpose):
+    """Look a token up without consuming it — used to render invitation forms."""
+    token = OneTimeToken.objects.select_related('user').filter(
+        token_hash=_hash_token(raw_token),
+        purpose=purpose,
+        used_at__isnull=True,
+    ).first()
+    if token is None or token.expires_at <= timezone.now():
+        return None
+    return token
+
+
+def send_invitation_email(user, inviter):
+    raw_token = create_one_time_token(user, OneTimeToken.Purpose.INVITATION, timedelta(days=7))
+    link = f"{settings.FRONTEND_URL}/activation-compte?token={raw_token}"
+    inviter_name = inviter.get_full_name() or inviter.username
+    role_label = user.get_role_display().lower()
+    _send_branded_email(
+        'Votre accès à la plateforme Task Force Présidentielle', user.email,
+        'Vous êtes invité à rejoindre la plateforme',
+        f'{inviter_name} vous a ouvert un accès {role_label} à la plateforme de la Task Force '
+        'Présidentielle. Cliquez ci-dessous pour choisir votre mot de passe et activer votre '
+        'compte. Cette invitation est valable 7 jours et ne fonctionne qu’une seule fois.',
+        'Activer mon compte', link,
+        'Vous ne vous attendiez pas à cette invitation ? Ignorez simplement ce message.',
+    )

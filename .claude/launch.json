@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev", "--prefix", "web-app", "--", "--host"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "backend/venv/Scripts/python.exe",
+      "runtimeArgs": ["backend/manage.py", "runserver", "8000"],
+      "port": 8000
     }
   ]
 }

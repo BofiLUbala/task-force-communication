@@ -108,3 +108,10 @@
   .post-detail-body { font-size: 1rem; line-height: 1.65; }
   .post-detail-body ul, .post-detail-body ol { padding-left: 1.45em; }
 }
+
+.post-detail-documents, .post-detail-links { margin-top: 32px; }
+.post-detail-documents h2, .post-detail-links h2 { font-size: 1.05rem; color: var(--navy); margin: 0 0 12px; }
+.post-detail-documents .post-detail-attachment { display: inline-flex; margin: 0 10px 10px 0; }
+.post-detail-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.post-detail-links a { display: inline-flex; align-items: center; gap: 8px; color: var(--navy); font-weight: 600; word-break: break-word; }
+.post-detail-links .material-symbols-outlined { font-size: 18px; }
