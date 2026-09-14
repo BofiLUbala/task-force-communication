@@ -19,12 +19,21 @@ const staffImages = [
   '/couverture4.jpeg',
 ];
 
+// Les photos sont servies en deux tailles : 1600px (public/xxx.jpeg) et 800px
+// (public/xxx-sm.jpeg). Sur mobile on charge la petite version : les originaux
+// 6720x4480 saturaient la memoire de decodage des navigateurs mobiles, qui
+// n'affichaient alors qu'une partie de l'image.
+const smallSrc = (src) => src.replace(/\.jpeg$/, '-sm.jpeg');
+const isNarrowScreen = () =>
+  typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+
 export default function Home() {
   const { tr } = usePreferences();
   const [latestNewsletter, setLatestNewsletter] = useState(null);
   const [videos, setVideos] = useState([]);
   const [socialLinks, setSocialLinks] = useState([]);
   const [heroImageIndex, setHeroImageIndex] = useState(0);
+  const [narrowScreen, setNarrowScreen] = useState(isNarrowScreen);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [staffImageIndex, setStaffImageIndex] = useState(0);
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -73,15 +82,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const query = window.matchMedia('(max-width: 900px)');
+    const onChange = (event) => setNarrowScreen(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
     heroImages.forEach((src) => {
       const image = new Image();
-      image.src = src;
+      image.src = narrowScreen ? smallSrc(src) : src;
     });
     const intervalId = window.setInterval(() => {
       setHeroImageIndex((current) => (current + 1) % heroImages.length);
     }, 10000);
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [narrowScreen]);
 
   return (
     <>
@@ -90,7 +106,7 @@ export default function Home() {
           {heroImages.map((src, index) => (
             <div
               className={`hero-bg${index === heroImageIndex ? ' is-active' : ''}`}
-              style={{ backgroundImage: `url(${src})` }}
+              style={{ backgroundImage: `url(${narrowScreen ? smallSrc(src) : src})` }}
               key={src}
             />
           ))}
@@ -198,7 +214,8 @@ export default function Home() {
                   {staffImages.map((src, index) => (
                     <img
                       className={index === staffImageIndex ? 'is-active' : ''}
-                      src={src}
+                      src={narrowScreen ? smallSrc(src) : src}
+                      loading="lazy"
                       alt={tr(`Équipe de la Task Force — photo ${index + 1}`, `Task Force team — photo ${index + 1}`)}
                       key={src}
                     />
