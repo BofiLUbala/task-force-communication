@@ -1,0 +1,17 @@
+{
+  // Web App statique servi par Cloudflare Workers (ex-Pages).
+  // "directory" pointe sur le BUILD, jamais sur les sources : tout ce que
+  // contient ce dossier devient public.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "taskforce",
+  "compatibility_date": "2026-09-11",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "web-app/dist",
+    // Equivalent du fallback SPA de web-app/public/_redirects : une route
+    // cliente rechargee a froid doit renvoyer index.html, pas une 404.
+    "not_found_handling": "single-page-application"
+  }
+}

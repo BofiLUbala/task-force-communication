@@ -27,7 +27,7 @@ L'app mobile Expo consomme **la même API**.
 | Médias S3 | `django-storages` activé dès que `AWS_STORAGE_BUCKET_NAME` est défini |
 | CSRF / CORS / HTTPS | Pilotés par variables d'environnement, durcis quand `DEBUG=False` |
 | Publications programmées | `python manage.py run_scheduled_publications` |
-| Fallback SPA | `web-app/public/_redirects` |
+| Fallback SPA | `wrangler.jsonc` (`not_found_handling`) |
 
 ---
 

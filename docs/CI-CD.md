@@ -5,7 +5,7 @@ concerné a changé — modifier le web-app ne relance pas le build mobile.
 
 | Workflow | Fichier | Déclencheur | Résultat |
 |---|---|---|---|
-| Web App | `.github/workflows/deploy-web.yml` | push `main` sur `web-app/**` | site en ligne (Cloudflare Pages) |
+| Web App | `.github/workflows/deploy-web.yml` | push `main` sur `web-app/**` | site en ligne (Cloudflare Workers) |
 | API Django | `.github/workflows/deploy-backend.yml` | push `main` sur `backend/**` | image Docker sur GHCR + redéploiement |
 | App mobile | `.github/workflows/build-mobile.yml` | manuel, ou tag `mobile-v*` | APK Android / IPA iOS via EAS |
 
@@ -24,14 +24,21 @@ demande, sur un tag de version, jamais automatiquement.
 ### Web App — onglet *Secrets*
 | Nom | Où le trouver |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | dash.cloudflare.com > My Profile > API Tokens > Create Token > permission **Cloudflare Pages: Edit** |
-| `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com, colonne de droite de la page d'accueil |
+| `CLOUDFLARE_API_TOKEN` | dash.cloudflare.com > My Profile > API Tokens > Create Token > modèle **Edit Cloudflare Workers** |
+| `CLOUDFLARE_ACCOUNT_ID` | `75a7ce7f558c33f20edfd67b0c041f92` |
 | `VITE_API_URL` | l'URL publique de l'API, ex. `https://api.exemple.cd/api` |
 
-### Web App — onglet *Variables*
-| Nom | Valeur |
-|---|---|
-| `CF_PAGES_PROJECT` | le nom du projet Pages (créé une fois : `npx wrangler pages project create taskforce`) |
+Le projet Cloudflare existe déjà : **`taskforce`**, en ligne sur
+<https://taskforce.bofigauthier3.workers.dev>. Sa configuration est
+`wrangler.jsonc`, à la racine du dépôt.
+
+> `wrangler.jsonc` → `assets.directory` doit rester sur **`web-app/dist`**.
+> Tout ce que contient ce dossier est servi publiquement : le faire pointer sur
+> `web-app/` publierait les sources, `node_modules` et les fichiers `.env`.
+
+Le fallback SPA est assuré par `not_found_handling: single-page-application`.
+L'ancien `web-app/public/_redirects` a été supprimé : les Workers refusent la
+règle `/* /index.html 200` (boucle de redirection détectée au déploiement).
 
 > `VITE_API_URL` est **inliné à la compilation**. Changer l'URL de l'API impose
 > de relancer le workflow, pas seulement de redémarrer le serveur.

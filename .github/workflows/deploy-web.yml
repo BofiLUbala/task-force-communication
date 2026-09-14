@@ -1,15 +1,15 @@
-# Web App -> Cloudflare Pages.
+# Web App -> Cloudflare Workers (ex-Cloudflare Pages).
 #
 # Se declenche a chaque push sur main touchant web-app/. Le build est fait ici
 # (VITE_API_URL est inline a la compilation : changer l'API impose un rebuild,
-# pas un simple redemarrage), puis dist/ est publie sur Cloudflare Pages.
+# pas un simple redemarrage), puis wrangler.jsonc publie web-app/dist.
+# wrangler.jsonc ne doit JAMAIS pointer sur les sources : tout ce que contient
+# le dossier "assets" devient public.
 #
 # Secrets requis (Settings > Secrets and variables > Actions) :
-#   CLOUDFLARE_API_TOKEN   token avec la permission "Cloudflare Pages: Edit"
-#   CLOUDFLARE_ACCOUNT_ID  ID du compte Cloudflare
+#   CLOUDFLARE_API_TOKEN   token avec la permission "Workers Scripts: Edit"
+#   CLOUDFLARE_ACCOUNT_ID  75a7ce7f558c33f20edfd67b0c041f92
 #   VITE_API_URL           ex. https://api.exemple.cd/api
-# Variable requise :
-#   CF_PAGES_PROJECT       nom du projet Pages (Settings > Variables)
 
 name: Deploy web app
 
@@ -55,10 +55,11 @@ jobs:
           fi
           npm run build
 
-      - name: Publier sur Cloudflare Pages
+      - name: Publier sur Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: web-app
-          command: pages deploy dist --project-name=${{ vars.CF_PAGES_PROJECT }} --branch=main
+          # Depuis la racine du depot : c'est la que se trouve wrangler.jsonc.
+          workingDirectory: .
+          command: deploy

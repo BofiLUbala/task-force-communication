@@ -1,3 +1,10 @@
 # Photos sources pleine resolution (6720x4480), non servies : seules les
 # versions redimensionnees de web-app/public/ sont deployees.
 originals/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
