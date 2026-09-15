@@ -1,21 +1,27 @@
-# API Django -> Amazon ECR, puis redeploiement App Runner.
+# API Django -> instance EC2, via AWS Systems Manager.
 #
-# Architecture decrite dans docs/DEPLOYMENT.md :
-#   GitHub Actions -> ECR -> App Runner -> RDS PostgreSQL (+ S3 pour les medias)
+# Architecture reelle (voir docs/DEPLOYMENT.md) :
+#   Cloudflare Workers (site) -> tunnel cloudflared -> EC2 (gunicorn + PostgreSQL)
 #
-# L'authentification passe par OIDC : GitHub obtient des identifiants AWS
-# temporaires en assumant un role. Aucune cle d'acces longue duree n'est
-# stockee dans le depot (procedure de creation du role : docs/CI-CD.md).
+# Le deploiement ne pousse pas d'image : l'instance tire le code depuis Git et
+# redemarre son service. Pas de Docker, pas de registre, comme les autres
+# projets de l'equipe.
 #
-# Secrets requis :
-#   AWS_ROLE_ARN             arn:aws:iam::<compte>:role/github-actions-taskforce
-# Secret optionnel :
-#   APPRUNNER_SERVICE_ARN    ARN du service App Runner. Absent, ou si le
-#                            service est en auto-deploiement, l'image est
-#                            simplement poussee sur ECR.
-# Variables (Settings > Variables) :
-#   AWS_REGION               defaut eu-west-3 (Paris)
-#   ECR_REPOSITORY           defaut taskforce-backend
+# Deux jobs volontairement separes :
+#
+#   check   se declenche a chaque push. Il ne touche pas a AWS, donc il passe
+#           toujours au vert et signale une migration oubliee ou un settings
+#           casse avant qu'ils n'arrivent sur le serveur.
+#
+#   deploy  est MANUEL (Actions > Deploy backend > Run workflow). Tant que le
+#           role OIDC n'existe pas, un declenchement automatique ne ferait
+#           qu'echouer a chaque push sans rien apprendre a personne.
+#
+# Secrets requis par `deploy` uniquement :
+#   AWS_ROLE_ARN     role IAM assume par GitHub via OIDC (procedure : docs/CI-CD.md)
+#   EC2_INSTANCE_ID  ex. i-06ac961922a60190a
+# Variable :
+#   AWS_REGION       defaut eu-west-3 (Paris)
 
 name: Deploy backend
 
@@ -54,67 +60,70 @@ jobs:
           python manage.py makemigrations --check --dry-run
 
   deploy:
+    # Manuel tant que AWS_ROLE_ARN et EC2_INSTANCE_ID ne sont pas configures.
+    if: github.event_name == 'workflow_dispatch'
     needs: check
     runs-on: ubuntu-latest
     permissions:
-      # Requis par OIDC pour reclamer le jeton d'identite GitHub.
       id-token: write
       contents: read
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-3' }}
-      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || 'taskforce-backend' }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Identifiants AWS temporaires (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Connexion a ECR
-        id: ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build et push
-        uses: docker/build-push-action@v6
-        with:
-          context: backend
-          push: true
-          # Le tag SHA permet de revenir a une version precise ; latest est ce
-          # que tire App Runner au redeploiement.
-          tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # App Runner en auto-deploiement reagit tout seul au nouveau tag latest.
-      # Sinon ce declenchement explicite lance le deploiement et attend qu'il
-      # se termine, pour que le job echoue si le service ne demarre pas.
-      - name: Redeployer App Runner
+      # SSM execute les commandes sur l'instance sans ouvrir le moindre port :
+      # c'est le meme canal que la console Session Manager.
+      - name: Deployer sur l'instance
         env:
-          SERVICE_ARN: ${{ secrets.APPRUNNER_SERVICE_ARN }}
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: |
-          if [ -z "$SERVICE_ARN" ]; then
-            echo "Aucun APPRUNNER_SERVICE_ARN : image poussee sur ECR, redeploiement non declenche."
-            exit 0
+          set -euo pipefail
+          if [ -z "${INSTANCE_ID:-}" ]; then
+            echo "::error::Le secret EC2_INSTANCE_ID est absent."
+            exit 1
           fi
-          OPERATION=$(aws apprunner start-deployment \
-            --service-arn "$SERVICE_ARN" \
-            --query OperationId --output text)
-          echo "Deploiement $OPERATION en cours..."
-          for _ in $(seq 1 60); do
-            STATUS=$(aws apprunner describe-service \
-              --service-arn "$SERVICE_ARN" \
-              --query Service.Status --output text)
-            case "$STATUS" in
-              RUNNING) echo "Service RUNNING."; exit 0 ;;
-              CREATE_FAILED|DELETE_FAILED) echo "::error::Service en echec ($STATUS)"; exit 1 ;;
-            esac
-            sleep 20
-          done
-          echo "::error::Le service n'est pas repasse en RUNNING apres 20 minutes."
-          exit 1
+
+          CMD=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploiement Task Force ${GITHUB_SHA::7}" \
+            --parameters 'commands=[
+              "set -e",
+              "cd /opt/taskforce",
+              "git fetch --all --prune",
+              "git reset --hard origin/main",
+              "cd backend",
+              "venv/bin/pip install -r requirements.txt -q",
+              "venv/bin/python manage.py migrate --noinput",
+              "venv/bin/python manage.py collectstatic --noinput",
+              "systemctl restart taskforce",
+              "sleep 5",
+              "curl -fsS http://127.0.0.1:8000/healthz/"
+            ]' \
+            --query Command.CommandId --output text)
+
+          echo "Commande SSM $CMD envoyee, attente du resultat..."
+          aws ssm wait command-executed \
+            --command-id "$CMD" --instance-id "$INSTANCE_ID" || true
+
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$CMD" --instance-id "$INSTANCE_ID" \
+            --query Status --output text)
+          echo "--- sortie ---"
+          aws ssm get-command-invocation \
+            --command-id "$CMD" --instance-id "$INSTANCE_ID" \
+            --query StandardOutputContent --output text
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "::error::Deploiement en echec ($STATUS)"
+            aws ssm get-command-invocation \
+              --command-id "$CMD" --instance-id "$INSTANCE_ID" \
+              --query StandardErrorContent --output text
+            exit 1
+          fi
+          echo "Deploiement termine : le service repond sur /healthz/."
