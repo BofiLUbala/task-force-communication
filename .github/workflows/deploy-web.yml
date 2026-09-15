@@ -60,6 +60,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # L'action installe Wrangler 3 par defaut, qui exige un script
+          # (`main`) et refuse un Worker fait uniquement d'assets statiques :
+          #   "Missing entry-point: ... or the `main` config field."
+          # Le service d'assets sans script n'existe qu'a partir de la v4.
+          wranglerVersion: '4'
           # Depuis la racine du depot : c'est la que se trouve wrangler.jsonc.
           workingDirectory: .
           command: deploy
